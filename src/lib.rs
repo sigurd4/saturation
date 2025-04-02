@@ -1,0 +1,87 @@
+#![feature(generic_const_exprs)]
+#![feature(associated_const_equality)]
+
+use num::Float;
+
+moddef::moddef!(
+    flat(pub) mod {
+        pentode for cfg(feature = "tubes"),
+        triode for cfg(feature = "tubes"),
+        soft_exp for cfg(feature = "soft_exp"),
+    },
+    pub mod {
+        tubes for cfg(feature = "tubes")
+    },
+    mod {
+        plot for cfg(test),
+        rtf for cfg(feature = "tubes")
+    }
+);
+
+pub trait Saturation<F, R>
+where
+    F: Float
+{
+    fn saturate(&self, x: F, range: R) -> F;
+}
+
+#[cfg(test)]
+mod tests
+{
+    use core::ops::Range;
+
+    use linspace::LinspaceArray;
+
+    const PLOT_TARGET: &str = "plots";
+
+    pub fn plot<const N: usize, F>(sat_name: &str, range: Range<f32>, mut f: F)
+    where
+        F: FnMut(f32) -> [f32; N]
+    {
+        const RES: usize = 512;
+
+        let x: [f32; RES] = range.linspace_array();
+        
+        let mut first = true;
+        let file_name_no_extension: String = sat_name
+            .chars()
+            .flat_map(|c| {
+                if c.is_ascii_uppercase()
+                {
+                    if first
+                    {
+                        first = false;
+                        vec![c.to_ascii_lowercase()]
+                    }
+                    else
+                    {
+                        vec!['_', c.to_ascii_lowercase()]
+                    }
+                }
+                else
+                {
+                    vec![c]
+                }
+            })
+            .collect();
+
+        let mut y = [[0.0; RES]; N];
+        for (i, yy) in x.iter()
+            .map(|&x| f(x))
+            .enumerate()
+        {
+            for (src, dst) in yy.into_iter()
+                .zip(y.iter_mut())
+            {
+                dst[i] = src;
+            }
+        }
+
+        crate::plot::plot_curves(
+            &format!("Curve of {}", sat_name),
+            &format!("{}/{}.png", PLOT_TARGET, file_name_no_extension),
+            [x; N],
+            y
+        ).expect("Plot failed");
+    }
+}
