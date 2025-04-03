@@ -120,8 +120,7 @@ where
         self.output_filter.param.c.change(f!(M::C_CP) + f!(M::C_PG)*miller_effect, change);
         self.input_filter.param.c.change(f!(M::C_CG) + f!(M::C_PG)/miller_effect, change);
 
-        let vp = self.output_filter.filter(rate, vp);
-        vp
+        self.output_filter.filter(rate, vp)
     }
 }
 
