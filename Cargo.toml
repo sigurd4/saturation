@@ -1,6 +1,6 @@
 [package]
 name = "saturation"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Sigurd Sætherø Spangelo"]
 edition = "2024"
 license = "MIT"
