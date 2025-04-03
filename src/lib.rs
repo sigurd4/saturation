@@ -18,11 +18,27 @@ moddef::moddef!(
     }
 );
 
+pub use real_time_fir_iir_filters::f;
+
 pub trait Saturation<F, R>
 where
     F: Float
 {
     fn saturate(&self, x: F, range: R) -> F;
+}
+
+fn exp_ln_1p<F>(x: F) -> F
+where
+    F: Float
+{
+    x.max(F::zero()) + (-x.abs()).exp().ln_1p()
+}
+
+fn change<F>(rate: F) -> F
+where
+    F: Float
+{
+    f!(1.0e-3)/(F::one() + rate)
 }
 
 #[cfg(test)]

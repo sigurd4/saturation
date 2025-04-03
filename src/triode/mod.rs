@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use real_time_fir_iir_filters::{f, change::Change, conf::LowPass, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}, static_rtf::StaticRtfBase};
+use real_time_fir_iir_filters::{f, change::Change, conf::LowPass, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}};
 
 use crate::{rtf::Rtf1, tubes::Tube12AX7};
 
@@ -54,7 +54,7 @@ where
         let vpp = self.param.v_pp;
         let rgi = f!(M::R_GI);
 
-        self.input_filter.param.r = f!(M::R_GI.recip()) + ri.recip().recip();
+        self.input_filter.param.r = (f!(1.0/M::R_GI) + ri.recip()).recip();
 
         let vg = self.input_filter.filter(rate, x*rgi/(rgi + ri));
 
@@ -69,45 +69,58 @@ where
             //let mut v1 = vp/kp*(kp*(mu_inv + vg/(kvb + vp*vp).sqrt())).exp().ln_1p();
             //let mut vp = vpp - two_rp*v1.max(zero).powf(ex)/kg1;
 
-            let mut vp = vpp/(one + two_rp/mu/kg1);
-            let mut v1 = vp/kp*(kp*(mu_inv + vg/(kvb + vp*vp).sqrt())).exp().ln_1p();
+            let mut v1 = {
+                let vp = vpp/(one + two_rp/mu/kg1);
+                vp/kp*crate::exp_ln_1p(kp*(mu_inv + vg/(kvb + vp*vp).sqrt()))
+            };
 
-            let mut df_dv1 = zero;
-            let mut b = zero;
-            let mut term_sqrt = zero;
             const NEWTON: usize = 4;
 
             for _ in 0..NEWTON
             {
                 v1 = v1.max(zero);
-                vp = vpp - two_rp*v1.powf(ex)/kg1;
+                let vp = (vpp - two_rp*v1.powf(ex)/kg1).max(zero);
                 let dvp_dv1 = -two_rp*ex*v1.powf(ex - one)/kg1;
 
                 let term = kvb + vp*vp;
-                term_sqrt = term.sqrt();
+                let term_sqrt = term.sqrt();
 
-                b = mu_inv + vg/term_sqrt;
+                let b = mu_inv + vg/term_sqrt;
                 let db_dv1 = -vg*vp*dvp_dv1/(term*term_sqrt);
 
-                let c = (kp*b).exp().ln_1p();
+                let c = crate::exp_ln_1p(kp*b);
                 let dc_dv1_d_kp = (kp*b - c).exp()*db_dv1;
                 
                 let f = v1 - vp*c/kp;
-                df_dv1 = one - dvp_dv1*c/kp - dc_dv1_d_kp*vp;
+                let df_dv1 = one - dvp_dv1*c/kp - dc_dv1_d_kp*vp;
 
                 let delta = f/df_dv1;
                 v1 = v1 - delta;
             }
 
-            let vp = (vpp - two_rp*v1.max(zero).powf(ex)/kg1).max(zero);
-            let df_dvg = vp/term_sqrt/(one + (-kp*b).exp());
-            let a = df_dvg/df_dv1;
+            v1 = v1.max(zero);
+            let vp = (vpp - two_rp*v1.powf(ex)/kg1).max(zero);
+            let dvp_dv1 = -two_rp*ex*v1.powf(ex - one)/kg1;
 
-            (vp, a)
+            let term = kvb + vp*vp;
+            let term_sqrt = term.sqrt();
+
+            let b = mu_inv + vg/term_sqrt;
+            let db_dv1 = -vg*vp*dvp_dv1/(term*term_sqrt);
+
+            let c = crate::exp_ln_1p(kp*b);
+            let dc_dv1_d_kp = (kp*b - c).exp()*db_dv1;
+            
+            let df_dv1 = one - dvp_dv1*c/kp - dc_dv1_d_kp*vp;
+
+            let df_dvg = vp/term_sqrt/(one + (-kp*b).exp());
+            let dvp_dvg = df_dvg/df_dv1*dvp_dv1;
+
+            (vp, dvp_dvg)
         };
 
         let miller_effect = one + a.max(zero);
-        let change = f!(1.0e-3)/(one + rate);
+        let change = crate::change(rate);
 
         self.output_filter.param.c.change(f!(M::C_CP) + f!(M::C_PG)*miller_effect, change);
         self.input_filter.param.c.change(f!(M::C_CG) + f!(M::C_PG)/miller_effect, change);
