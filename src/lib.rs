@@ -49,6 +49,7 @@ where
     fn saturate(&self, x: F, range: R) -> F;
 }
 
+#[cfg(feature = "tubes")]
 fn exp_ln_1p<F>(x: F) -> F
 where
     F: Float
@@ -57,6 +58,7 @@ where
     x.max(F::zero()) + (-x.abs()).exp().ln_1p()
 }
 
+#[cfg(feature = "diodes")]
 fn lambertw<F>(x_ln: F) -> F
 where
     F: Float
@@ -87,6 +89,7 @@ where
     (two - minusw * four + minusw2 - minusw3 / xexpminusw) / ((two - minusw * two + minusw2) / xexpminusw + two - minusw)
 }
 
+#[cfg(feature = "tubes")]
 fn change<F>(rate: F) -> F
 where
     F: Float
