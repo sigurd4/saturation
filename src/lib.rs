@@ -30,7 +30,16 @@ moddef::moddef!(
     }
 );
 
-pub use real_time_fir_iir_filters::f;
+#[allow(unused)]
+#[macro_export]
+macro_rules! f {
+    ($x:expr; $($f:tt)*) => {
+        <$($f)* as num::NumCast>::from($x).unwrap()
+    };
+    ($x:expr) => {
+        f!($x; F)
+    };
+}
 
 pub trait Saturation<F, R>
 where
