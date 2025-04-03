@@ -11,6 +11,7 @@ moddef::moddef!(
     }
 );
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Pentode<F, M = Tube6550>
 where
     F: FilterFloat,

@@ -9,6 +9,7 @@ moddef::moddef!(
     }
 );
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct DiodeClipper<F, M>
 where
     F: Float,
