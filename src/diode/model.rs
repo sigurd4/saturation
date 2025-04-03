@@ -1,8 +1,7 @@
 pub trait DiodeModel
 {
-    const K: f64;
+    // Peak reverse current
     const I_0: f64;
-    const Q_E: f64;
+    /// Ideality factor
     const ETA: f64;
-    const T: f64;
 }

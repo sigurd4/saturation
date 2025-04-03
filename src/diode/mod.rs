@@ -9,24 +9,26 @@ moddef::moddef!(
     }
 );
 
-pub struct DiodeClipper<F, M1, M2 = M1>
+pub struct DiodeClipper<F, M>
 where
     F: Float,
-    M1: DiodeModel,
-    M2: DiodeModel
+    M: DiodeModel
 {
     r_d: F,
-    marker: PhantomData<(M1, M2)>
+    marker: PhantomData<M>
 }
 
-impl<F, M1, M2> DiodeClipper<F, M1, M2>
+impl<F, M> DiodeClipper<F, M>
 where
-    M1: DiodeModel,
-    M2: DiodeModel,
+    M: DiodeModel,
     F: Float
 {
-    const I_0: [f64; 2] = [M1::I_0, M2::I_0];
-    const ALPHA: [f64; 2] = [M1::Q_E/M1::ETA/M1::K/M1::T, M2::Q_E/M2::ETA/M2::K/M2::T];
+    /// Temperature (Kelvin)
+    const T: f64 = 20.0 + 273.15;
+    /// Electron charge
+    const Q_E: f64 = 1.602176634e-19;
+    /// Boltzmann constant
+    const K: f64 = 1.38e-23;
 
     pub fn new(r_d: F) -> Self
     {
@@ -38,9 +40,8 @@ where
 
     pub fn saturate(&self, x: F) -> F
     {
-        let b = x.is_sign_negative();
-        let vf = f!(Self::I_0[b as usize])*self.r_d;
-        let alpha = f!(Self::ALPHA[b as usize]);
+        let vf = f!(M::I_0)*self.r_d;
+        let alpha = f!(Self::Q_E/M::ETA/Self::K/Self::T);
         let x_abs = x.abs();
         let e = (vf*alpha).ln() + (vf + x_abs)*alpha;
         let l = f!(crate::lambertw(e));
@@ -53,24 +54,30 @@ mod test
 {
     use core::ops::Range;
 
-    use crate::diodes::Diode1N4148;
+    use crate::diodes::{Diode1N34A, Diode1N4001, Diode1N4148, Diode1N914};
 
     use super::*;
 
     #[test]
     fn it_works()
     {
-        const RANGE: Range<f32> = -2.0..2.0;
+        const RANGE: Range<f32> = -10.0..10.0;
         
         let r_d = 1e3;
         
         let t0 = DiodeClipper::<_, Diode1N4148>::new(r_d);
+        let t1 = DiodeClipper::<_, Diode1N914>::new(r_d);
+        let t2 = DiodeClipper::<_, Diode1N4001>::new(r_d);
+        let t3 = DiodeClipper::<_, Diode1N34A>::new(r_d);
 
         crate::tests::plot(
             "DiodeClipper",
             RANGE,
             |x| [
-                t0.saturate(x)
+                t0.saturate(x),
+                t1.saturate(x),
+                t2.saturate(x),
+                t3.saturate(x)
             ]
         )
     }
