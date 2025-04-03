@@ -1,4 +1,4 @@
-use core::{f32, marker::PhantomData};
+use core::marker::PhantomData;
 
 use num::Float;
 use real_time_fir_iir_filters::f;
@@ -53,18 +53,18 @@ mod test
 {
     use core::ops::Range;
 
-    use crate::{diodes::Diode1N4148, tubes::{Tube12AU7, Tube6550, Tube6DJ8, Tube6L6CG, TubeKT88}};
+    use crate::diodes::Diode1N4148;
 
     use super::*;
 
     #[test]
     fn it_works()
     {
-        const RANGE: Range<f32> = -10.0..10.0;
+        const RANGE: Range<f32> = -2.0..2.0;
         
         let r_d = 1e3;
         
-        let mut t0 = DiodeClipper::<_, Diode1N4148>::new(r_d);
+        let t0 = DiodeClipper::<_, Diode1N4148>::new(r_d);
 
         crate::tests::plot(
             "DiodeClipper",

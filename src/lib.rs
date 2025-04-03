@@ -72,8 +72,6 @@ where
     // (two + pexpminusw*(two - minusw))
     (two - minusw*four + minusw2 - minusw3/xexpminusw)
     / ((two - minusw*two + minusw2)/xexpminusw + two - minusw)
-    /*(two - four*minusw - minusw2 + minusw3/xexpminusw)
-        / ((two - minusw*two + minusw2)/xexpminusw + two - minusw)*/
 }
 
 fn change<F>(rate: F) -> F
