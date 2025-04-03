@@ -64,32 +64,24 @@ where
     let two = one + one;
     let four = two + two;
 
-    let logterm = if b
-    {
-        (f!(C)*x_ln.exp() + f!(D)).ln()
-    }
-    else
-    {
-        x_ln
-    };
+    let logterm = if b { (f!(C) * x_ln.exp() + f!(D)).ln() } else { x_ln };
     let loglogterm = logterm.ln();
 
     let minusw = -a - logterm + loglogterm - loglogterm / logterm;
     let xexpminusw = (x_ln + minusw).exp();
-    let minusw2 = minusw*minusw;
-    let minusw3 = minusw2*minusw;
+    let minusw2 = minusw * minusw;
+    let minusw3 = minusw2 * minusw;
 
     //(two*xexpminusw - minusw*(four*xexpminusw - minusw*pexpminusw))
     // (two + pexpminusw*(two - minusw))
-    (two - minusw*four + minusw2 - minusw3/xexpminusw)
-    / ((two - minusw*two + minusw2)/xexpminusw + two - minusw)
+    (two - minusw * four + minusw2 - minusw3 / xexpminusw) / ((two - minusw * two + minusw2) / xexpminusw + two - minusw)
 }
 
 fn change<F>(rate: F) -> F
 where
     F: Float
 {
-    f!(1.0e-3)/(F::one() + rate)
+    f!(1.0e-3) / (F::one() + rate)
 }
 
 #[cfg(test)]
@@ -108,7 +100,7 @@ mod tests
         const RES: usize = 512;
 
         let x: [f32; RES] = range.linspace_array();
-        
+
         let mut first = true;
         let file_name_no_extension: String = sat_name
             .chars()
@@ -133,12 +125,9 @@ mod tests
             .collect();
 
         let mut y = [[0.0; RES]; N];
-        for (i, yy) in x.iter()
-            .map(|&x| f(x))
-            .enumerate()
+        for (i, yy) in x.iter().map(|&x| f(x)).enumerate()
         {
-            for (src, dst) in yy.into_iter()
-                .zip(y.iter_mut())
+            for (src, dst) in yy.into_iter().zip(y.iter_mut())
             {
                 dst[i] = src;
             }
@@ -149,6 +138,7 @@ mod tests
             &format!("{}/{}.png", PLOT_TARGET, file_name_no_extension),
             [x; N],
             y
-        ).expect("Plot failed");
+        )
+        .expect("Plot failed");
     }
 }
