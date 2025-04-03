@@ -1,5 +1,6 @@
 use crate::DiodeModel;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct Diode1N4148;
 impl DiodeModel for Diode1N4148
 {
@@ -7,6 +8,7 @@ impl DiodeModel for Diode1N4148
     const ETA: f64 = 2.0;
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct Diode1N914;
 impl DiodeModel for Diode1N914
 {
@@ -14,6 +16,7 @@ impl DiodeModel for Diode1N914
     const ETA: f64 = 1.752;
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct Diode1N4001;
 impl DiodeModel for Diode1N4001
 {
@@ -21,6 +24,7 @@ impl DiodeModel for Diode1N4001
     const ETA: f64 = 1.9;
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct Diode1N34A;
 impl DiodeModel for Diode1N34A
 {

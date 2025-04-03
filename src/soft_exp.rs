@@ -4,7 +4,7 @@ use num::{Float, traits::FloatConst};
 
 use crate::Saturation;
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SoftExp;
 
 impl<F> Saturation<F, Range<F>> for SoftExp

@@ -4,6 +4,7 @@ use num::{traits::FloatConst, Float};
 
 use crate::{ATanMoid, Saturation};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SinHATanMoid;
 
 impl<F> Saturation<F, RangeFull> for SinHATanMoid

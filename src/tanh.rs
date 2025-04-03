@@ -4,6 +4,7 @@ use num::Float;
 
 use crate::Saturation;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct TanH;
 
 impl<F> Saturation<F, RangeFull> for TanH

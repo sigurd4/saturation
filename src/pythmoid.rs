@@ -4,6 +4,7 @@ use num::Float;
 
 use crate::Saturation;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PythMoid;
 
 impl<F> Saturation<F, RangeFull> for PythMoid
