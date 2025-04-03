@@ -42,7 +42,7 @@ where
         let vf = f!(Self::I_0[b as usize])*self.r_d;
         let alpha = f!(Self::ALPHA[b as usize]);
         let x_abs = x.abs();
-        let e = ((vf*alpha).ln() + (vf + x_abs)*alpha).exp();
+        let e = (vf*alpha).ln() + (vf + x_abs)*alpha;
         let l = f!(crate::lambertw(e));
         x.signum()*(x_abs + vf - l/alpha)
     }

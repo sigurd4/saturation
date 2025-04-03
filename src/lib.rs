@@ -36,35 +36,44 @@ where
     x.max(F::zero()) + (-x.abs()).exp().ln_1p()
 }
 
-fn lambertw<F>(x: F) -> F
+fn lambertw<F>(x_ln: F) -> F
 where
     F: Float
 {
-    const THRESHOLD: f64 = 2.26445;
-    const C: [f64; 2] = [1.0, 1.546865557];
-    const D: [f64; 2] = [0.0, 2.250366841];
+    const THRESHOLD: f64 = 0.8173319038410221;
+    const C: f64 = 1.546865557;
+    const D: f64 = 2.250366841;
     const A: [f64; 2] = [0.0, -0.737769969];
 
     let threshold = F::from(THRESHOLD).unwrap();
-    let b = x < threshold;
-    let c = f!(C[b as usize]);
-    let d = f!(D[b as usize]);
+    let b = x_ln < threshold;
     let a = f!(A[b as usize]);
 
     let one = F::one();
     let two = one + one;
     let four = two + two;
 
-    let logterm = (c * x + d).ln();
+    let logterm = if b
+    {
+        (f!(C)*x_ln.exp() + f!(D)).ln()
+    }
+    else
+    {
+        x_ln
+    };
     let loglogterm = logterm.ln();
 
     let minusw = -a - logterm + loglogterm - loglogterm / logterm;
-    let expminusw = minusw.exp();
-    let xexpminusw = x*expminusw;
-    let pexpminusw = xexpminusw - minusw;
+    let xexpminusw = (x_ln + minusw).exp();
+    let minusw2 = minusw*minusw;
+    let minusw3 = minusw2*minusw;
 
-    (two*xexpminusw - minusw*(four*xexpminusw - minusw*pexpminusw))
-        / (two + pexpminusw*(two - minusw))
+    //(two*xexpminusw - minusw*(four*xexpminusw - minusw*pexpminusw))
+    // (two + pexpminusw*(two - minusw))
+    (two - minusw*four + minusw2 - minusw3/xexpminusw)
+    / ((two - minusw*two + minusw2)/xexpminusw + two - minusw)
+    /*(two - four*minusw - minusw2 + minusw3/xexpminusw)
+        / ((two - minusw*two + minusw2)/xexpminusw + two - minusw)*/
 }
 
 fn change<F>(rate: F) -> F
