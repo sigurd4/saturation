@@ -46,7 +46,6 @@ where
         // Math: https://www.normankoren.com/Audio/Tubemodspice_article.html
 
         let one = F::one();
-        let two = one + one;
         let zero = F::zero();
 
         let ri = self.param.r_i;
