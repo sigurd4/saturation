@@ -8,7 +8,7 @@ num = "0.4.3"
 moddef = "0.2.6"
 real_time_fir_iir_filters = {version = "1.2.3", optional = true, default-features = false}
 serde = {version = "1.0.219", features = ["derive"]}
-fastapprox = {version = "0.3.1", optional = true}
+libm = {version = "0.2.11", optional = true}
 
 [dev-dependencies]
 plotters = "0.3.7"
@@ -18,8 +18,10 @@ linspace = "0.1.1"
 default = [
     "soft_exp",
     "tubes",
-    "diodes"
+    "diodes",
+    "libm"
 ]
 soft_exp = []
 tubes = ["dep:real_time_fir_iir_filters", "real_time_fir_iir_filters/first_order_rc"]
-diodes = ["dep:fastapprox"]
+diodes = []
+libm = ["dep:libm"]

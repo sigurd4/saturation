@@ -1,5 +1,8 @@
 #![feature(generic_const_exprs)]
 #![feature(associated_const_equality)]
+#![feature(specialization)]
+
+use core::ops::RangeBounds;
 
 use num::Float;
 
@@ -8,7 +11,14 @@ moddef::moddef!(
         diode for cfg(feature = "diodes"),
         pentode for cfg(feature = "tubes"),
         triode for cfg(feature = "tubes"),
+
+        atanmoid,
+        erfmoid for cfg(feature = "libm"),
+        linmoid,
+        pythmoid,
+        sinh_atanmoid,
         soft_exp for cfg(feature = "soft_exp"),
+        tanh
     },
     pub mod {
         diodes for cfg(feature = "diodes"),
@@ -24,7 +34,8 @@ pub use real_time_fir_iir_filters::f;
 
 pub trait Saturation<F, R>
 where
-    F: Float
+    F: Float,
+    R: RangeBounds<F>
 {
     fn saturate(&self, x: F, range: R) -> F;
 }
