@@ -5,11 +5,13 @@ use num::Float;
 
 moddef::moddef!(
     flat(pub) mod {
+        diode for cfg(feature = "diodes"),
         pentode for cfg(feature = "tubes"),
         triode for cfg(feature = "tubes"),
         soft_exp for cfg(feature = "soft_exp"),
     },
     pub mod {
+        diodes for cfg(feature = "diodes"),
         tubes for cfg(feature = "tubes")
     },
     mod {
@@ -32,6 +34,37 @@ where
     F: Float
 {
     x.max(F::zero()) + (-x.abs()).exp().ln_1p()
+}
+
+fn lambertw<F>(x: F) -> F
+where
+    F: Float
+{
+    const THRESHOLD: f64 = 2.26445;
+    const C: [f64; 2] = [1.0, 1.546865557];
+    const D: [f64; 2] = [0.0, 2.250366841];
+    const A: [f64; 2] = [0.0, -0.737769969];
+
+    let threshold = F::from(THRESHOLD).unwrap();
+    let b = x < threshold;
+    let c = f!(C[b as usize]);
+    let d = f!(D[b as usize]);
+    let a = f!(A[b as usize]);
+
+    let one = F::one();
+    let two = one + one;
+    let four = two + two;
+
+    let logterm = (c * x + d).ln();
+    let loglogterm = logterm.ln();
+
+    let minusw = -a - logterm + loglogterm - loglogterm / logterm;
+    let expminusw = minusw.exp();
+    let xexpminusw = x*expminusw;
+    let pexpminusw = xexpminusw - minusw;
+
+    (two*xexpminusw - minusw*(four*xexpminusw - minusw*pexpminusw))
+        / (two + pexpminusw*(two - minusw))
 }
 
 fn change<F>(rate: F) -> F
