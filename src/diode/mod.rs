@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 
 use num::Float;
-use real_time_fir_iir_filters::f;
+use crate::f;
 
 moddef::moddef!(
     flat(pub) mod {
