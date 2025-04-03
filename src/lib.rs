@@ -44,6 +44,7 @@ fn exp_ln_1p<F>(x: F) -> F
 where
     F: Float
 {
+    //x.exp().ln_1p()
     x.max(F::zero()) + (-x.abs()).exp().ln_1p()
 }
 

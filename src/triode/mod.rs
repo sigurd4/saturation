@@ -11,7 +11,6 @@ moddef::moddef!(
     }
 );
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Triode<F, M = Tube12AX7>
 where
     F: FilterFloat,
@@ -47,6 +46,7 @@ where
         // Math: https://www.normankoren.com/Audio/Tubemodspice_article.html
 
         let one = F::one();
+        let two = one + one;
         let zero = F::zero();
 
         let ri = self.param.r_i;
@@ -66,22 +66,40 @@ where
             let kvb = f!(M::K_VB);
             let kg1 = f!(M::K_G1);
             let ex = f!(M::EX);
+
+            let v1_max = (vpp*kg1/two_rp).powf(ex.recip());
             
             //let mut v1 = vp/kp*(kp*(mu_inv + vg/(kvb + vp*vp).sqrt())).exp().ln_1p();
             //let mut vp = vpp - two_rp*v1.max(zero).powf(ex)/kg1;
 
+            //let mut vp = vpp - two_rp*(vp/kp*(kp*(mu_inv + vg/(kvb + vp*vp).sqrt())).exp().ln_1p()).max(zero).powf(ex)/kg1;
+
+            /*let mut vp = {
+                let v1 = crate::exp_ln_1p(vpp + vg*mu)/(mu + two_rp/kg1);
+                vpp - two_rp*v1.max(zero).powf(ex)/kg1
+            };*/
+
+            //let vp = (vpp - vg*rp/kg1)/(one + rp/mu/kg1);
+            //let mut v1 = vp/kp*(kp*(mu_inv + vg/(kvb + vp*vp).sqrt())).exp().ln_1p();
+            
             let mut v1 = {
-                let vp = vpp/(one + two_rp/mu/kg1);
-                vp/kp*crate::exp_ln_1p(kp*(mu_inv + vg/(kvb + vp*vp).sqrt()))
+                let mut vp = vpp/(one + rp/(mu*kg1));
+                vp = {
+                    let b = crate::exp_ln_1p(kp*(mu_inv + vg/(kvb + vp*vp).sqrt()));
+                    let v1 = vpp/(kp/b + two_rp/kg1);
+                    vpp - two_rp*v1/kg1
+                };
+                let b = crate::exp_ln_1p(kp*(mu_inv + vg/(kvb + vp*vp).sqrt()));
+                vpp/(kp/b + two_rp/kg1)
             };
 
-            const NEWTON: usize = 4;
+            const NEWTON: usize = 2;
 
             for _ in 0..NEWTON
             {
-                v1 = v1.max(zero);
-                let vp = (vpp - two_rp*v1.powf(ex)/kg1).max(zero);
-                let dvp_dv1 = -two_rp*ex*v1.powf(ex - one)/kg1;
+                v1 = v1.max(zero).min(v1_max);
+                let vp = (vpp - two_rp/kg1*v1.powf(ex)).max(zero);
+                let dvp_dv1 = -two_rp/kg1*ex*v1.powf(ex - one);
 
                 let term = kvb + vp*vp;
                 let term_sqrt = term.sqrt();
@@ -99,7 +117,7 @@ where
                 v1 = v1 - delta;
             }
 
-            v1 = v1.max(zero);
+            v1 = v1.max(zero).min(v1_max);
             let vp = (vpp - two_rp*v1.powf(ex)/kg1).max(zero);
             let dvp_dv1 = -two_rp*ex*v1.powf(ex - one)/kg1;
 
@@ -126,7 +144,8 @@ where
         self.output_filter.param.c.change(f!(M::C_CP) + f!(M::C_PG)*miller_effect, change);
         self.input_filter.param.c.change(f!(M::C_CG) + f!(M::C_PG)/miller_effect, change);
 
-        self.output_filter.filter(rate, vp)
+        let vp = self.output_filter.filter(rate, vp);
+        vp
     }
 }
 
@@ -143,7 +162,7 @@ mod test
     fn it_works()
     {
         const RATE: f32 = 100.0;
-        const RANGE: Range<f32> = -2.0..2.0;
+        const RANGE: Range<f32> = -10.0..10.0;
         
         let param = TriodeClassA {
             r_i: 1e3,

@@ -85,7 +85,7 @@ where
             }
             vp = vp.max(zero).min(vpp);
 
-            const NEWTON: usize = 10;
+            const NEWTON: usize = 2;
 
             for _ in 0..NEWTON
             {
