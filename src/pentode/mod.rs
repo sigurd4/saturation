@@ -20,6 +20,7 @@ where
     param: PentodeClassA<F>,
     input_filter: FirstOrderRCFilter<LowPass, F>,
     output_filter: FirstOrderRCFilter<LowPass, F>,
+    miller_effect: F,
     marker: PhantomData<M>
 }
 
@@ -36,6 +37,7 @@ where
             param,
             input_filter,
             output_filter,
+            miller_effect: F::one(),
             marker: PhantomData
         }
     }
@@ -58,7 +60,7 @@ where
 
         self.input_filter.param.r = (f!(1.0/M::R_GI) + ri.recip()).recip();
 
-        let vg = self.input_filter.filter(rate, x*rgi/(rgi + ri));
+        let vg = self.input_filter.filter(rate, x*rgi/(rgi + ri) - self.param.v_c);
 
         let mu_inv = f!(1.0/M::MU);
         let kp = f!(M::K_P);
@@ -114,13 +116,18 @@ where
             (vpp, zero)
         };
 
-        let miller_effect = one + a.max(zero);
+        self.miller_effect = one + a.max(zero);
         let change = crate::change(rate);
 
-        self.output_filter.param.c.change(f!(M::C_CP) + f!(M::C_PG)*miller_effect, change);
-        self.input_filter.param.c.change(f!(M::C_CG) + f!(M::C_PG)/miller_effect, change);
+        self.output_filter.param.c.change(f!(M::C_CP) + f!(M::C_PG)*self.miller_effect, change);
+        self.input_filter.param.c.change(f!(M::C_CG) + f!(M::C_PG)/self.miller_effect, change);
 
         self.output_filter.filter(rate, vp)
+    }
+
+    pub fn miller_effect(&self) -> F
+    {
+        self.miller_effect
     }
 }
 
@@ -143,7 +150,8 @@ mod test
             r_i: 1e3,
             r_p: 1e3,
             v_pp: 24.0,
-            v_g2: 3.3
+            v_g2: 3.3,
+            v_c: 0.0
         };
         
         let mut t0 = Pentode::<_, Tube6L6CG>::new(param);
