@@ -11,6 +11,7 @@ moddef::moddef!(
     }
 );
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Triode<F, M = Tube12AX7>
 where
     F: FilterFloat,
