@@ -21,6 +21,7 @@ where
     input_filter: FirstOrderRCFilter<LowPass, F>,
     output_filter: FirstOrderRCFilter<LowPass, F>,
     miller_effect: F,
+    offset: F,
     marker: PhantomData<M>
 }
 
@@ -33,34 +34,29 @@ where
     {
         let input_filter = FirstOrderRCFilter::new::<LowPass>(RC {r: param.r_i, c: f!(M::C_CG + M::C_PG)});
         let output_filter = FirstOrderRCFilter::new::<LowPass>(RC {r: param.r_p, c: f!(M::C_CP + M::C_PG)});
-        Self {
+        let mut pentode = Self {
             param,
             input_filter,
             output_filter,
             miller_effect: F::one(),
+            offset: F::zero(),
             marker: PhantomData
-        }
+        };
+        pentode.calibrate();
+        pentode
     }
 
-    pub fn saturate(&mut self, rate: F, x: F) -> F
-    where
-        FirstOrderRCFilter<LowPass, F>: Rtf1<F = F>
+    pub fn calibrate(&mut self)
     {
-        // Math: https://www.normankoren.com/Audio/Tubemodspice_article.html
+        self.offset = self.vp_a(F::zero()).0;
+    }
 
+    fn vp_a(&self, vg: F) -> (F, F)
+    {
+        let PentodeClassA {r_i: _, r_p: rp, v_g2: vg2, v_pp: vpp, v_c: _} = self.param;
+        let two_rp = rp + rp;
         let one = F::one();
         let zero = F::zero();
-
-        let ri = self.param.r_i;
-        let rp = self.param.r_p;
-        let two_rp = rp + rp;
-        let vg2 = self.param.v_g2;
-        let vpp = self.param.v_pp;
-        let rgi = f!(M::R_GI);
-
-        self.input_filter.param.r = (f!(1.0/M::R_GI) + ri.recip()).recip();
-
-        let vg = self.input_filter.filter(rate, x*rgi/(rgi + ri) - self.param.v_c);
 
         let mu_inv = f!(1.0/M::MU);
         let kp = f!(M::K_P);
@@ -73,7 +69,7 @@ where
         
         let v1 = vg2_d_kp*crate::exp_ln_1p(c);
 
-        let (vp, a) = if v1.is_sign_positive()
+        if v1.is_sign_positive()
         {
             let rp_inv = two_rp.recip();
             let vpp_d_rp = vpp/two_rp;
@@ -114,7 +110,28 @@ where
         else
         {
             (vpp, zero)
-        };
+        }
+    }
+
+    pub fn saturate(&mut self, rate: F, x: F) -> F
+    where
+        FirstOrderRCFilter<LowPass, F>: Rtf1<F = F>
+    {
+        // Math: https://www.normankoren.com/Audio/Tubemodspice_article.html
+
+        let one = F::one();
+        let zero = F::zero();
+
+        let ri = self.param.r_i;
+        let rgi = f!(M::R_GI);
+
+        self.input_filter.param.r = (f!(1.0/M::R_GI) + ri.recip()).recip();
+
+        let vg = self.input_filter.filter(rate, x*rgi/(rgi + ri) - self.param.v_c);
+
+        let (vp, a) = self.vp_a(vg);
+
+        let y = vp - self.offset;
 
         self.miller_effect = one + a.max(zero);
         let change = crate::change(rate);
@@ -122,7 +139,7 @@ where
         self.output_filter.param.c.change(f!(M::C_CP) + f!(M::C_PG)*self.miller_effect, change);
         self.input_filter.param.c.change(f!(M::C_CG) + f!(M::C_PG)/self.miller_effect, change);
 
-        self.output_filter.filter(rate, vp)
+        self.output_filter.filter(rate, y)
     }
 
     pub fn miller_effect(&self) -> F
