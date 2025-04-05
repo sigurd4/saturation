@@ -48,7 +48,7 @@ where
 
     pub fn calibrate(&mut self)
     {
-        self.offset = self.vp_a(F::zero()).0;
+        self.offset = self.vp_a(-self.param.v_c).0;
     }
 
     fn vp_a(&self, vg: F) -> (F, F)

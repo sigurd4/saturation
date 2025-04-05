@@ -184,7 +184,7 @@ mod test
     fn it_works()
     {
         const RATE: f32 = 100.0;
-        const RANGE: Range<f32> = -10.0..10.0;
+        const RANGE: Range<f32> = -20.0..20.0;
         
         let param = TriodeClassA {
             r_i: 1e3,
