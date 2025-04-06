@@ -84,7 +84,7 @@ where
 
         let y = vp - self.offset;
 
-        self.miller_effect = one + a.max(zero);
+        self.miller_effect = one - a.min(zero);
         let change = crate::change(rate);
 
         self.input_filter.update_miller_effect(self.miller_effect, change);
