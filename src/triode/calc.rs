@@ -112,6 +112,6 @@ where
         let df_dvg = vp/term_sqrt/(one + (-kp*b).exp());
         let dvp_dvg = df_dvg/df_dv1*dvp_dv1;
 
-        [vp, dvp_dvg]
+        [vp, -dvp_dvg]
     }
 }
