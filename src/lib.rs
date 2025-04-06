@@ -110,7 +110,7 @@ fn change<F>(rate: F) -> F
 where
     F: Float
 {
-    f!(1.0e-3) / (F::one() + rate)
+    f!(1.0) / (F::one() + rate)
 }
 
 #[cfg(test)]
