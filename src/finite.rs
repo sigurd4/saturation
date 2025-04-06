@@ -1,4 +1,4 @@
-use core::{cmp::Ordering, ops::{Add, Deref, Div, Mul, Rem, Sub}};
+use core::{cmp::Ordering, fmt::Debug, ops::{Add, Deref, Div, Mul, Rem, Sub}};
 
 use num::Float;
 
@@ -22,6 +22,15 @@ where
         {
             None
         }
+    }
+}
+impl<F> Debug for Finite<F>
+where
+    F: Float + Debug
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+    {
+        self.0.fmt(f)
     }
 }
 impl<F> PartialEq<F> for Finite<F>

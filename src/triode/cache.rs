@@ -7,6 +7,7 @@ use crate::CurveCache;
 
 use super::{calc::TriodeCalc, TriodeClassA, TriodeModel};
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 struct TriodeCacheFunc<F, M>
 where
     F: FilterFloat,
@@ -37,6 +38,7 @@ where
         TriodeCalc::<F, M>::vp_a(&mut self.param, vg)
     }
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TriodeCache<F, M, A = Global>
 where
     F: FilterFloat,

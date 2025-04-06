@@ -7,6 +7,7 @@ use crate::CurveCache;
 
 use super::{calc::PentodeCalc, PentodeClassA, PentodeModel};
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 struct PentodeCacheFunc<F, M>
 where
     F: FilterFloat,
@@ -37,6 +38,7 @@ where
         PentodeCalc::<F, M>::vp_a(&mut self.param, vg)
     }
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PentodeCache<F, M, A = Global>
 where
     F: FilterFloat,

@@ -5,6 +5,7 @@ use crate::{finite::Finite, SaturationMut};
 
 use num::Float;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CurveCache<F, const N: usize, Y, A = Global>
 where
     F: Float,
