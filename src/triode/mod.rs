@@ -1,173 +1,105 @@
-use core::marker::PhantomData;
+use real_time_fir_iir_filters::{conf::LowPass, filters::iir::first::FirstOrderRCFilter, param::FilterFloat};
 
-use real_time_fir_iir_filters::{f, change::Change, conf::LowPass, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}};
-
-use crate::{rtf::Rtf1, tubes::Tube12AX7};
+use crate::tubes::Tube12AX7;
 
 moddef::moddef!(
     flat(pub) mod {
+        cache,
         model,
         param
+    },
+    flat mod {
+        calc,
+        filter
     }
 );
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct Triode<F, M = Tube12AX7>
+pub struct Triode<F, M = Tube12AX7, FI = FirstOrderRCFilter<LowPass, F>, FO = FirstOrderRCFilter<LowPass, F>, C = TriodeCache<F, M>>
 where
     F: FilterFloat,
-    M: TriodeModel
+    M: TriodeModel,
+    C: TriodeCalc<F, M>,
+    FI: TriodeFilter<F, M>,
+    FO: TriodeFilter<F, M>
 {
-    param: TriodeClassA<F>,
-    input_filter: FirstOrderRCFilter<LowPass, F>,
-    output_filter: FirstOrderRCFilter<LowPass, F>,
+    calc: C,
+    input_filter: FI,
+    output_filter: FO,
     miller_effect: F,
     offset: F,
-    marker: PhantomData<M>
+    model: M
 }
 
-impl<F, M> Triode<F, M>
+impl<F, M, C, FI, FO> Triode<F, M, FI, FO, C>
 where
     F: FilterFloat,
-    M: TriodeModel
+    M: TriodeModel,
+    C: TriodeCalc<F, M>,
+    FI: TriodeFilter<F, M>,
+    FO: TriodeFilter<F, M>
 {
-    pub fn new(param: TriodeClassA<F>) -> Self
+    pub fn new(calc: C, model: M) -> Self
     {
-        let input_filter = FirstOrderRCFilter::new::<LowPass>(RC {r: param.r_i, c: f!(M::C_CG + M::C_PG)});
-        let output_filter = FirstOrderRCFilter::new::<LowPass>(RC {r: param.r_p, c: f!(M::C_CP + M::C_PG)});
-        let mut this = Self {
-            param,
+        let input_filter = FI::new_input_filter(calc.param().r_i);
+        let output_filter = FO::new_output_filter(calc.param().r_p);
+        let mut triode = Self {
+            calc,
             input_filter,
             output_filter,
             miller_effect: F::one(),
             offset: F::zero(),
-            marker: PhantomData
+            model,
         };
-        this.calibrate();
-        this
+        triode.calibrate();
+        triode
+    }
+
+    pub fn param(&self) -> &TriodeClassA<F>
+    {
+        self.calc.param()
+    }
+    pub fn param_mut(&mut self) -> &mut TriodeClassA<F>
+    {
+        self.calc.param_mut()
     }
 
     pub fn calibrate(&mut self)
     {
-        self.offset = self.vp_a(-self.param.v_c).0;
-    }
-
-    fn vp_a(&self, vg: F) -> (F, F)
-    {
-        let TriodeClassA {r_i: _, r_p: rp, v_pp: vpp, v_c: _} = self.param;
-        let two_rp = rp + rp;
-        let one = F::one();
-        let zero = F::zero();
-
-        let mu_inv = f!(1.0/M::MU);
-        let mu = f!(M::MU);
-        let kp = f!(M::K_P);
-        let kvb = f!(M::K_VB);
-        let kg1 = f!(M::K_G1);
-        let ex = f!(M::EX);
-
-        let v1_max = (vpp*kg1/two_rp).powf(ex.recip());
-        
-        //let mut v1 = vp/kp*(kp*(mu_inv + vg/(kvb + vp*vp).sqrt())).exp().ln_1p();
-        //let mut vp = vpp - two_rp*v1.max(zero).powf(ex)/kg1;
-
-        //let mut vp = vpp - two_rp*(vp/kp*(kp*(mu_inv + vg/(kvb + vp*vp).sqrt())).exp().ln_1p()).max(zero).powf(ex)/kg1;
-
-        /*let mut vp = {
-            let v1 = crate::exp_ln_1p(vpp + vg*mu)/(mu + two_rp/kg1);
-            vpp - two_rp*v1.max(zero).powf(ex)/kg1
-        };*/
-
-        //let vp = (vpp - vg*rp/kg1)/(one + rp/mu/kg1);
-        //let mut v1 = vp/kp*(kp*(mu_inv + vg/(kvb + vp*vp).sqrt())).exp().ln_1p();
-        
-        let mut v1 = {
-            let mut vp = vpp/(one + rp/(mu*kg1));
-            vp = {
-                let b = crate::exp_ln_1p(kp*(mu_inv + vg/(kvb + vp*vp).sqrt()));
-                let v1 = vpp/(kp/b + two_rp/kg1);
-                vpp - two_rp*v1/kg1
-            };
-            let b = crate::exp_ln_1p(kp*(mu_inv + vg/(kvb + vp*vp).sqrt()));
-            vpp/(kp/b + two_rp/kg1)
-        };
-
-        const NEWTON: usize = 2;
-
-        for _ in 0..NEWTON
-        {
-            v1 = v1.max(zero).min(v1_max);
-            let vp = (vpp - two_rp/kg1*v1.powf(ex)).max(zero);
-            let dvp_dv1 = -two_rp/kg1*ex*v1.powf(ex - one);
-
-            let term = kvb + vp*vp;
-            let term_sqrt = term.sqrt();
-
-            let b = mu_inv + vg/term_sqrt;
-            let db_dv1 = -vg*vp*dvp_dv1/(term*term_sqrt);
-
-            let c = crate::exp_ln_1p(kp*b);
-            let dc_dv1_d_kp = (kp*b - c).exp()*db_dv1;
-            
-            let f = v1 - vp*c/kp;
-            let df_dv1 = one - dvp_dv1*c/kp - dc_dv1_d_kp*vp;
-
-            let delta = f/df_dv1;
-            v1 = v1 - delta;
-        }
-
-        v1 = v1.max(zero).min(v1_max);
-        let vp = (vpp - two_rp*v1.powf(ex)/kg1).max(zero);
-        let dvp_dv1 = -two_rp*ex*v1.powf(ex - one)/kg1;
-
-        let term = kvb + vp*vp;
-        let term_sqrt = term.sqrt();
-
-        let b = mu_inv + vg/term_sqrt;
-        let db_dv1 = -vg*vp*dvp_dv1/(term*term_sqrt);
-
-        let c = crate::exp_ln_1p(kp*b);
-        let dc_dv1_d_kp = (kp*b - c).exp()*db_dv1;
-        
-        let df_dv1 = one - dvp_dv1*c/kp - dc_dv1_d_kp*vp;
-
-        let df_dvg = vp/term_sqrt/(one + (-kp*b).exp());
-        let dvp_dvg = df_dvg/df_dv1*dvp_dv1;
-
-        (vp, dvp_dvg)
+        [self.offset, _] = self.calc.vp_a(-self.param().v_c);
     }
 
     pub fn saturate(&mut self, rate: F, x: F) -> F
-    where
-        FirstOrderRCFilter<LowPass, F>: Rtf1<F = F>
     {
         // Math: https://www.normankoren.com/Audio/Tubemodspice_article.html
 
         let one = F::one();
         let zero = F::zero();
 
-        let ri = self.param.r_i;
-        let rgi = f!(M::R_GI);
+        let param = *self.param();
 
-        self.input_filter.param.r = (f!(1.0/M::R_GI) + ri.recip()).recip();
+        let vg = self.input_filter.vg(param, rate, x);
 
-        let vg = self.input_filter.filter(rate, x*rgi/(rgi + ri) - self.param.v_c);
-
-        let (vp, a) = self.vp_a(vg);
+        let [vp, a] = self.calc.vp_a(vg);
 
         let y = vp - self.offset;
 
         self.miller_effect = one + a.max(zero);
         let change = crate::change(rate);
 
-        self.output_filter.param.c.change(f!(M::C_CP) + f!(M::C_PG)*self.miller_effect, change);
-        self.input_filter.param.c.change(f!(M::C_CG) + f!(M::C_PG)/self.miller_effect, change);
+        self.input_filter.update_miller_effect(self.miller_effect, change);
+        self.output_filter.update_miller_effect(self.miller_effect.recip(), change);
 
-        self.output_filter.filter(rate, y)
+        self.output_filter.y(rate, y)
     }
 
     pub fn miller_effect(&self) -> F
     {
         self.miller_effect
+    }
+    pub fn offset(&self) -> F
+    {
+        self.offset
     }
 }
 
@@ -183,8 +115,9 @@ mod test
     #[test]
     fn it_works()
     {
-        const RATE: f32 = 100.0;
         const RANGE: Range<f32> = -20.0..20.0;
+        const RATE: f32 = 8000.0;
+        const DY: f32 = 0.001;
         
         let param = TriodeClassA {
             r_i: 1e3,
@@ -193,12 +126,12 @@ mod test
             v_c: 0.0
         };
         
-        let mut t0 = Triode::<_, Tube6DJ8>::new(param);
-        let mut t1 = Triode::<_, Tube12AX7>::new(param);
-        let mut t2 = Triode::<_, Tube12AU7>::new(param);
-        let mut t3 = Triode::<_, Tube6L6CG>::new(param);
-        let mut t4 = Triode::<_, Tube6550>::new(param);
-        let mut t5 = Triode::<_, TubeKT88>::new(param);
+        let mut t0 = Triode::<_, _, (), ()>::new(param.cache(DY), Tube6DJ8);
+        let mut t1 = Triode::<_, _, (), ()>::new(param.cache(DY), Tube12AX7);
+        let mut t2 = Triode::<_, _, (), ()>::new(param.cache(DY), Tube12AU7);
+        let mut t3 = Triode::<_, _, (), ()>::new(param.cache(DY), Tube6L6CG);
+        let mut t4 = Triode::<_, _, (), ()>::new(param.cache(DY), Tube6550);
+        let mut t5 = Triode::<_, _, (), ()>::new(param.cache(DY), TubeKT88);
 
         crate::tests::plot(
             "Triode",

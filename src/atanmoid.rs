@@ -2,11 +2,20 @@ use core::ops::RangeFull;
 
 use num::{traits::FloatConst, Float};
 
-use crate::Saturation;
+use crate::{Saturation, SaturationMut};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ATanMoid;
 
+impl<F> SaturationMut<F, RangeFull> for ATanMoid
+where
+    F: Float + FloatConst
+{
+    fn saturate_mut(&mut self, x: F, range: RangeFull) -> F
+    {
+        self.saturate(x, range)
+    }
+}
 impl<F> Saturation<F, RangeFull> for ATanMoid
 where
     F: Float + FloatConst

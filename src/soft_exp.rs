@@ -2,11 +2,20 @@ use core::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInc
 
 use num::{Float, traits::FloatConst};
 
-use crate::Saturation;
+use crate::{Saturation, SaturationMut};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SoftExp;
 
+impl<F> SaturationMut<F, Range<F>> for SoftExp
+where
+    F: Float + FloatConst
+{
+    fn saturate_mut(&mut self, x: F, range: Range<F>) -> F
+    {
+        self.saturate(x, range)
+    }
+}
 impl<F> Saturation<F, Range<F>> for SoftExp
 where
     F: Float + FloatConst
@@ -24,6 +33,15 @@ where
         }
     }
 }
+impl<F> SaturationMut<F, RangeFrom<F>> for SoftExp
+where
+    F: Float + FloatConst
+{
+    fn saturate_mut(&mut self, x: F, range: RangeFrom<F>) -> F
+    {
+        self.saturate(x, range)
+    }
+}
 impl<F> Saturation<F, RangeFrom<F>> for SoftExp
 where
     F: Float + FloatConst
@@ -34,6 +52,15 @@ where
         assert!(range.start <= F::zero(), "Lower bound must be negative");
         x = x.max(range.start);
         x + (range.start - x).exp() - range.start.exp()
+    }
+}
+impl<F> SaturationMut<F, RangeTo<F>> for SoftExp
+where
+    F: Float + FloatConst
+{
+    fn saturate_mut(&mut self, x: F, range: RangeTo<F>) -> F
+    {
+        self.saturate(x, range)
     }
 }
 impl<F> Saturation<F, RangeTo<F>> for SoftExp
@@ -49,6 +76,15 @@ where
     }
 }
 
+impl<F> SaturationMut<F, RangeInclusive<F>> for SoftExp
+where
+    F: Float + FloatConst
+{
+    fn saturate_mut(&mut self, x: F, range: RangeInclusive<F>) -> F
+    {
+        self.saturate(x, range)
+    }
+}
 impl<F> Saturation<F, RangeInclusive<F>> for SoftExp
 where
     F: Float + FloatConst
@@ -59,6 +95,15 @@ where
         self.saturate(x, *range.start()..*range.end())
     }
 }
+impl<F> SaturationMut<F, RangeToInclusive<F>> for SoftExp
+where
+    F: Float + FloatConst
+{
+    fn saturate_mut(&mut self, x: F, range: RangeToInclusive<F>) -> F
+    {
+        self.saturate(x, range)
+    }
+}
 impl<F> Saturation<F, RangeToInclusive<F>> for SoftExp
 where
     F: Float + FloatConst
@@ -67,6 +112,15 @@ where
     fn saturate(&self, x: F, range: RangeToInclusive<F>) -> F
     {
         self.saturate(x, ..range.end)
+    }
+}
+impl<F> SaturationMut<F, RangeFull> for SoftExp
+where
+    F: Float + FloatConst
+{
+    fn saturate_mut(&mut self, x: F, range: RangeFull) -> F
+    {
+        self.saturate(x, range)
     }
 }
 impl<F> Saturation<F, RangeFull> for SoftExp

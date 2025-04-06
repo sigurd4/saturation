@@ -1,6 +1,12 @@
 #![feature(generic_const_exprs)]
 #![feature(associated_const_equality)]
 #![feature(specialization)]
+#![feature(allocator_api)]
+#![feature(btreemap_alloc)]
+#![feature(btree_cursors)]
+#![feature(negative_impls)]
+#![feature(fn_traits)]
+#![feature(unboxed_closures)]
 
 use core::ops::RangeBounds;
 
@@ -13,6 +19,7 @@ moddef::moddef!(
         triode for cfg(feature = "tubes"),
 
         atanmoid,
+        curve_cache,
         erfmoid for cfg(feature = "libm"),
         linmoid,
         pythmoid,
@@ -25,6 +32,7 @@ moddef::moddef!(
         tubes for cfg(feature = "tubes")
     },
     mod {
+        finite,
         plot for cfg(test),
         rtf for cfg(feature = "tubes")
     }
@@ -41,7 +49,15 @@ macro_rules! f {
     };
 }
 
-pub trait Saturation<F, R>
+pub trait SaturationMut<F, R>
+where
+    F: Float,
+    R: RangeBounds<F>
+{
+    fn saturate_mut(&mut self, x: F, range: R) -> F;
+}
+
+pub trait Saturation<F, R>: SaturationMut<F, R>
 where
     F: Float,
     R: RangeBounds<F>

@@ -1,4 +1,8 @@
+use std::alloc::Allocator;
+
 use real_time_fir_iir_filters::param::FilterFloat;
+
+use super::{PentodeCache, PentodeModel};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct PentodeClassA<F>
@@ -15,4 +19,23 @@ where
     pub v_pp: F,
     /// Cathode voltage
     pub v_c: F
+}
+impl<F> PentodeClassA<F>
+where
+    F: FilterFloat
+{
+    pub fn cache_in<M, A>(self, dy: F, alloc: A) -> PentodeCache<F, M, A>
+    where
+        M: PentodeModel,
+        A: Allocator + Clone
+    {
+        PentodeCache::new_in(self, dy, alloc)
+    }
+
+    pub fn cache<M>(self, dy: F) -> PentodeCache<F, M>
+    where
+        M: PentodeModel
+    {
+        PentodeCache::new(self, dy)
+    }
 }
