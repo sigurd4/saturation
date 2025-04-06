@@ -105,14 +105,6 @@ where
     (two - minusw * four + minusw2 - minusw3 / xexpminusw) / ((two - minusw * two + minusw2) / xexpminusw + two - minusw)
 }
 
-#[cfg(feature = "tubes")]
-fn change<F>(rate: F) -> F
-where
-    F: Float
-{
-    f!(1.0) / (F::one() + rate)
-}
-
 #[cfg(test)]
 mod tests
 {

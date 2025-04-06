@@ -1,4 +1,4 @@
-use real_time_fir_iir_filters::{conf::LowPass, change::Change, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}};
+use real_time_fir_iir_filters::{conf::LowPass, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}};
 
 use super::{PentodeClassA, PentodeModel};
 
@@ -13,7 +13,8 @@ where
 
     fn new_output_filter(r_p: F) -> Self;
 
-    fn update_miller_effect(&mut self, miller_effect: F, change: F);
+    fn update_miller_effect_input(&mut self, miller_effect: F);
+    fn update_miller_effect_output(&mut self, miller_effect: F);
 
     fn vg(&mut self, param: PentodeClassA<F>, rate: F, x: F) -> F;
     fn y(&mut self, rate: F, y: F) -> F;
@@ -33,7 +34,11 @@ where
         
     }
 
-    fn update_miller_effect(&mut self, _: F, _: F)
+    fn update_miller_effect_input(&mut self, _: F)
+    {
+
+    }
+    fn update_miller_effect_output(&mut self, _: F)
     {
 
     }
@@ -65,9 +70,13 @@ where
         FirstOrderRCFilter::new::<LowPass>(RC {r: r_p, c: f!(M::C_CP + M::C_PG)})
     }
 
-    fn update_miller_effect(&mut self, miller_effect: F, change: F)
+    fn update_miller_effect_input(&mut self, miller_effect: F)
     {
-        self.param.c.change(f!(M::C_CP) + f!(M::C_PG)*miller_effect, change);
+        self.param.c = f!(M::C_CG) + f!(M::C_PG)*miller_effect;
+    }
+    fn update_miller_effect_output(&mut self, miller_effect: F)
+    {
+        self.param.c = f!(M::C_CP) + f!(M::C_PG)/miller_effect;
     }
 
     fn vg(&mut self, param: PentodeClassA<F>, rate: F, x: F) -> F
