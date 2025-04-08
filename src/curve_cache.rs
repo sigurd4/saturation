@@ -112,11 +112,6 @@ where
                         let a = (x - x0)/dx;
                         return core::array::from_fn(|i| y0[i] + dy[i]*a)
                     }
-
-                    let one = F::one();
-                    let two = one + one;
-                    let xm = (x1 + x0)/(two + two) - *x;
-                    dxx = Some(xm*d)
                 },
                 (None, Some((&x1, y1))) => {
                     if x1 == x
@@ -132,7 +127,7 @@ where
                         return *y0 
                     }
 
-                    dxx = Some((x0 - x)*d);
+                    dxx = Some((x - x0)*d);
                 },
                 (None, None) => ()
             }
