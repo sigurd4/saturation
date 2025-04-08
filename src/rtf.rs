@@ -16,3 +16,20 @@ where
         }
     }
 }
+
+pub trait Rtf2: RtfBase<OUTPUTS = 2>
+{
+    fn filter(&mut self, rate: Self::F, x: Self::F) -> [Self::F; 2];
+}
+impl<T> Rtf2 for T
+where
+    Self: Rtf<OUTPUTS = 2>,
+    [(); Self::OUTPUTS]:
+{
+    fn filter(&mut self, rate: Self::F, x: Self::F) -> [Self::F; 2]
+    {
+        unsafe {
+            core::intrinsics::transmute_unchecked(Rtf::filter(self, rate, x))
+        }
+    }
+}

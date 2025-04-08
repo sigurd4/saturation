@@ -15,38 +15,44 @@ moddef::moddef!(
 );
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct Triode<F, M = Tube12AX7, FI = FirstOrderRCFilter<LowPass, F>, FO = FirstOrderRCFilter<LowPass, F>, C = TriodeCache<F, M>>
+pub struct Triode<F, M = Tube12AX7, FI = FirstOrderRCFilter<LowPass, F>, FO = FirstOrderRCFilter<LowPass, F>, FC = FirstOrderRCFilter<LowPass, F>, C = TriodeCache<F, M>>
 where
     F: FilterFloat,
     M: TriodeModel,
     C: TriodeCalc<F, M>,
     FI: TriodeFilter<F, M>,
-    FO: TriodeFilter<F, M>
+    FO: TriodeFilter<F, M>,
+    FC: TriodeCathodeFilter<F, M>
 {
     calc: C,
     input_filter: FI,
     output_filter: FO,
+    cathode_filter: FC,
     miller_effect: F,
     offset: F,
     model: M
 }
 
-impl<F, M, C, FI, FO> Triode<F, M, FI, FO, C>
+impl<F, M, C, FI, FO, FC> Triode<F, M, FI, FO, FC, C>
 where
     F: FilterFloat,
     M: TriodeModel,
     C: TriodeCalc<F, M>,
     FI: TriodeFilter<F, M>,
-    FO: TriodeFilter<F, M>
+    FO: TriodeFilter<F, M>,
+    FC: TriodeCathodeFilter<F, M>
 {
-    pub fn new(calc: C, model: M) -> Self
+    pub fn new(calc: C, model: M, cathode: FC::Param) -> Self
     {
-        let input_filter = FI::new_input_filter(calc.param().r_i);
-        let output_filter = FO::new_output_filter(calc.param().r_p);
+        let param = calc.param();
+        let input_filter = FI::new_input_filter(param.r_i);
+        let output_filter = FO::new_output_filter(param.r_p);
+        let cathode_filter = FC::new_cathode_filter(cathode);
         let mut triode = Self {
             calc,
             input_filter,
             output_filter,
+            cathode_filter,
             miller_effect: F::one(),
             offset: F::zero(),
             model,
@@ -63,6 +69,14 @@ where
     {
         self.calc.param_mut()
     }
+    pub fn param_cathode(&self) -> &FC::Param
+    {
+        self.cathode_filter.param_cathode()
+    }
+    pub fn param_cathode_mut(&mut self) -> &mut FC::Param
+    {
+        self.cathode_filter.param_cathode_mut()
+    }
 
     pub fn calibrate(&mut self)
     {
@@ -78,7 +92,8 @@ where
 
         let param = *self.param();
 
-        let vg = self.input_filter.vg(param, rate, x);
+        let mut vg = self.cathode_filter.vg_cathode(param, self.miller_effect, rate, x);
+        vg = self.input_filter.vg(param, rate, vg);
 
         let [vp, a] = self.calc.vp_a(vg);
 
@@ -107,6 +122,8 @@ mod test
 {
     use core::ops::Range;
 
+    use real_time_fir_iir_filters::param::RC;
+
     use crate::tubes::{Tube12AU7, Tube6550, Tube6DJ8, Tube6L6CG, TubeKT88};
 
     use super::*;
@@ -124,13 +141,17 @@ mod test
             v_pp: 24.0,
             v_c: 0.0
         };
+        let param_cathode = RC {
+            r: 3.3e3,
+            c: 5e-6
+        };
         
-        let mut t0 = Triode::<_, _, (), ()>::new(param.cache(DY), Tube6DJ8);
-        let mut t1 = Triode::<_, _, (), ()>::new(param.cache(DY), Tube12AX7);
-        let mut t2 = Triode::<_, _, (), ()>::new(param.cache(DY), Tube12AU7);
-        let mut t3 = Triode::<_, _, (), ()>::new(param.cache(DY), Tube6L6CG);
-        let mut t4 = Triode::<_, _, (), ()>::new(param.cache(DY), Tube6550);
-        let mut t5 = Triode::<_, _, (), ()>::new(param.cache(DY), TubeKT88);
+        let mut t0 = Triode::<_, _>::new(param.cache(DY), Tube6DJ8, param_cathode);
+        let mut t1 = Triode::<_, _>::new(param.cache(DY), Tube12AX7, param_cathode);
+        let mut t2 = Triode::<_, _>::new(param.cache(DY), Tube12AU7, param_cathode);
+        let mut t3 = Triode::<_, _>::new(param.cache(DY), Tube6L6CG, param_cathode);
+        let mut t4 = Triode::<_, _>::new(param.cache(DY), Tube6550, param_cathode);
+        let mut t5 = Triode::<_, _>::new(param.cache(DY), TubeKT88, param_cathode);
 
         crate::tests::plot(
             "Triode",

@@ -15,38 +15,44 @@ moddef::moddef!(
 );
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct Pentode<F, M = Tube6550, FI = FirstOrderRCFilter<LowPass, F>, FO = FirstOrderRCFilter<LowPass, F>, C = PentodeCache<F, M>>
+pub struct Pentode<F, M = Tube6550, FI = FirstOrderRCFilter<LowPass, F>, FO = FirstOrderRCFilter<LowPass, F>, FC = FirstOrderRCFilter<LowPass, F>, C = PentodeCache<F, M>>
 where
     F: FilterFloat,
     M: PentodeModel,
     C: PentodeCalc<F, M>,
     FI: PentodeFilter<F, M>,
-    FO: PentodeFilter<F, M>
+    FO: PentodeFilter<F, M>,
+    FC: PentodeCathodeFilter<F, M>
 {
     calc: C,
     input_filter: FI,
     output_filter: FO,
+    cathode_filter: FC,
     miller_effect: F,
     offset: F,
     model: M
 }
 
-impl<F, M, C, FI, FO> Pentode<F, M, FI, FO, C>
+impl<F, M, C, FI, FO, FC> Pentode<F, M, FI, FO, FC, C>
 where
     F: FilterFloat,
     M: PentodeModel,
     C: PentodeCalc<F, M>,
     FI: PentodeFilter<F, M>,
-    FO: PentodeFilter<F, M>
+    FO: PentodeFilter<F, M>,
+    FC: PentodeCathodeFilter<F, M>
 {
-    pub fn new(calc: C, model: M) -> Self
+    pub fn new(calc: C, model: M, cathode: FC::Param) -> Self
     {
-        let input_filter = FI::new_input_filter(calc.param().r_i);
-        let output_filter = FO::new_output_filter(calc.param().r_p);
+        let param = calc.param();
+        let input_filter = FI::new_input_filter(param.r_i);
+        let output_filter = FO::new_output_filter(param.r_p);
+        let cathode_filter = FC::new_cathode_filter(cathode);
         let mut pentode = Self {
             calc,
             input_filter,
             output_filter,
+            cathode_filter,
             miller_effect: F::one(),
             offset: F::zero(),
             model,
@@ -63,6 +69,14 @@ where
     {
         self.calc.param_mut()
     }
+    pub fn param_cathode(&self) -> &FC::Param
+    {
+        self.cathode_filter.param_cathode()
+    }
+    pub fn param_cathode_mut(&mut self) -> &mut FC::Param
+    {
+        self.cathode_filter.param_cathode_mut()
+    }
 
     pub fn calibrate(&mut self)
     {
@@ -78,7 +92,8 @@ where
 
         let param = *self.param();
 
-        let vg = self.input_filter.vg(param, rate, x);
+        let mut vg = self.cathode_filter.vg_cathode(param, self.miller_effect, rate, x);
+        vg = self.input_filter.vg(param, rate, vg);
 
         let [vp, a] = self.calc.vp_a(vg);
 
@@ -107,6 +122,8 @@ mod test
 {
     use core::ops::Range;
 
+    use real_time_fir_iir_filters::param::RC;
+
     use crate::tubes::{Tube6550, Tube6L6CG, TubeKT88};
 
     use super::*;
@@ -125,10 +142,14 @@ mod test
             v_g2: 3.3,
             v_c: 0.0
         };
+        let param_cathode = RC {
+            r: 0.0,
+            c: 0.0
+        };
         
-        let mut t0 = Pentode::<_, _>::new(param.cache(DY), Tube6L6CG);
-        let mut t1 = Pentode::<_, _>::new(param.cache(DY), Tube6550);
-        let mut t2 = Pentode::<_, _>::new(param.cache(DY), TubeKT88);
+        let mut t0 = Pentode::<_, _>::new(param.cache(DY), Tube6L6CG, param_cathode);
+        let mut t1 = Pentode::<_, _>::new(param.cache(DY), Tube6550, param_cathode);
+        let mut t2 = Pentode::<_, _>::new(param.cache(DY), TubeKT88, param_cathode);
 
         crate::tests::plot(
             "Pentode",

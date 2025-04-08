@@ -7,6 +7,7 @@
 #![feature(negative_impls)]
 #![feature(fn_traits)]
 #![feature(unboxed_closures)]
+#![feature(core_intrinsics)]
 
 use core::ops::RangeBounds;
 

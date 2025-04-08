@@ -1,8 +1,76 @@
-use real_time_fir_iir_filters::{conf::LowPass, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}};
+use real_time_fir_iir_filters::{conf::{All, LowPass}, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}, static_rtf::StaticRtfBase};
 
 use super::{TriodeClassA, TriodeModel};
 
-use crate::{f, rtf::Rtf1};
+use crate::{f, rtf::{Rtf1, Rtf2}};
+
+pub trait TriodeCathodeFilter<F, M>
+where
+    F: FilterFloat,
+    M: TriodeModel
+{
+    type Param;
+
+    fn new_cathode_filter(param: Self::Param) -> Self;
+
+    fn param_cathode(&self) -> &Self::Param;
+    fn param_cathode_mut(&mut self) -> &mut Self::Param;
+
+    fn vg_cathode(&mut self, param: TriodeClassA<F>, miller_effect: F, rate: F, x: F) -> F;
+}
+impl<F, M> TriodeCathodeFilter<F, M> for ()
+where
+    F: FilterFloat,
+    M: TriodeModel
+{
+    type Param = ();
+
+    fn new_cathode_filter(_: Self::Param) -> Self
+    {
+        
+    }
+
+    fn param_cathode(&self) -> &Self::Param
+    {
+        self
+    }
+    fn param_cathode_mut(&mut self) -> &mut Self::Param
+    {
+        self
+    }
+
+    fn vg_cathode(&mut self, _: TriodeClassA<F>, _: F, _: F, x: F) -> F
+    {
+        x
+    }
+}
+impl<F, M> TriodeCathodeFilter<F, M> for FirstOrderRCFilter<LowPass, F, RC<F>>
+where
+    F: FilterFloat,
+    M: TriodeModel,
+    Self: Rtf1<F = F>
+{
+    type Param = RC<F>;
+
+    fn new_cathode_filter(param: Self::Param) -> Self
+    {
+        Self::new::<LowPass>(param)
+    }
+
+    fn param_cathode(&self) -> &Self::Param
+    {
+        self.get_param()
+    }
+    fn param_cathode_mut(&mut self) -> &mut Self::Param
+    {
+        self.get_param_mut()
+    }
+
+    fn vg_cathode(&mut self, param: TriodeClassA<F>, miller_effect: F, rate: F, x: F) -> F
+    {
+        x - self.filter(rate, (x*miller_effect - x)*self.param.r/param.r_p)
+    }
+}
 
 pub trait TriodeFilter<F, M>
 where
@@ -10,7 +78,6 @@ where
     M: TriodeModel
 {
     fn new_input_filter(r_i: F) -> Self;
-
     fn new_output_filter(r_p: F) -> Self;
 
     fn update_miller_effect_input(&mut self, miller_effect: F);
@@ -81,16 +148,10 @@ where
 
     fn vg(&mut self, param: TriodeClassA<F>, rate: F, x: F) -> F
     {
-        let ri = param.r_i;
-        let rgi = f!(M::R_GI);
-
-        self.param.r = (f!(1.0/M::R_GI) + ri.recip()).recip();
-
-        let vg = x*rgi/(rgi + ri) - param.v_c;
-        self.filter(rate, vg)
+        self.filter(rate, TriodeFilter::<F, M>::vg(&mut (), param, rate, x))
     }
     fn y(&mut self, rate: F, y: F) -> F
     {
-        self.filter(rate, y)
+        self.filter(rate, TriodeFilter::<F, M>::y(&mut (), rate, y))
     }
 }
