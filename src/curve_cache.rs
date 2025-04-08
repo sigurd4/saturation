@@ -1,7 +1,7 @@
 use core::ops::{Bound, RangeFull};
 use std::{alloc::{Allocator, Global}, collections::BTreeMap};
 
-use crate::{finite::Finite, SaturationMut};
+use crate::{f, finite::Finite, SaturationMut};
 
 use num::Float;
 
@@ -82,7 +82,8 @@ where
             None => return self.infinity[x.is_sign_positive() as usize]
         };
         let mut cursor = self.curve.lower_bound_mut(Bound::Excluded(&x));
-        
+        let d = f!(1.0/3.0);
+        let mut dxx = None;
         {
             let cursor = cursor.as_cursor();
             let xy0 = cursor.peek_prev();
@@ -111,25 +112,42 @@ where
                         let a = (x - x0)/dx;
                         return core::array::from_fn(|i| y0[i] + dy[i]*a)
                     }
+
+                    let one = F::one();
+                    let two = one + one;
+                    let xm = (x1 + x0)/(two + two) - *x;
+                    dxx = Some(xm*d)
                 },
                 (None, Some((&x1, y1))) => {
                     if x1 == x
                     {
                         return *y1 
                     }
+
+                    dxx = Some((x - x1)*d);
                 },
                 (Some((&x0, y0)), None) => {
                     if x0 == x
                     {
                         return *y0 
                     }
+
+                    dxx = Some((x0 - x)*d);
                 },
                 (None, None) => ()
             }
         }
 
         let y = (self.func)(*x);
-        cursor.insert_before(x, y).unwrap();
+        let (xx, yy) = if let Some(dxx) = dxx && let Some(xx) = Finite::new(x + dxx)
+        {
+            (xx, (self.func)(*xx))
+        }
+        else
+        {
+            (x, y)
+        };
+        cursor.insert_before(xx, yy).unwrap();
         y
     }
 }

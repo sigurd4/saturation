@@ -6,6 +6,7 @@
 #![feature(btree_cursors)]
 #![feature(negative_impls)]
 #![feature(fn_traits)]
+#![feature(let_chains)]
 #![feature(unboxed_closures)]
 #![feature(core_intrinsics)]
 
