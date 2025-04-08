@@ -100,8 +100,6 @@ where
     let minusw2 = minusw * minusw;
     let minusw3 = minusw2 * minusw;
 
-    //(two*xexpminusw - minusw*(four*xexpminusw - minusw*pexpminusw))
-    // (two + pexpminusw*(two - minusw))
     (two - minusw * four + minusw2 - minusw3 / xexpminusw) / ((two - minusw * two + minusw2) / xexpminusw + two - minusw)
 }
 
