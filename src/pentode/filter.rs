@@ -1,8 +1,8 @@
-use real_time_fir_iir_filters::{conf::{All, LowPass}, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}, static_rtf::StaticRtfBase};
+use real_time_fir_iir_filters::{conf::LowPass, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}, static_rtf::StaticRtfBase};
 
 use super::{PentodeClassA, PentodeModel};
 
-use crate::{f, rtf::{Rtf1, Rtf2}};
+use crate::{f, rtf::Rtf1};
 
 pub trait PentodeCathodeFilter<F, M>
 where
@@ -68,7 +68,7 @@ where
 
     fn vg_cathode(&mut self, param: PentodeClassA<F>, miller_effect: F, rate: F, x: F) -> F
     {
-        x - self.filter(rate, (x*self.param.r/param.r_p)/miller_effect)
+        x - self.filter(rate, (x*miller_effect - x)*self.param.r/param.r_p)
     }
 }
 

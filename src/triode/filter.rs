@@ -1,8 +1,8 @@
-use real_time_fir_iir_filters::{conf::{All, LowPass}, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}, static_rtf::StaticRtfBase};
+use real_time_fir_iir_filters::{conf::LowPass, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}, static_rtf::StaticRtfBase};
 
 use super::{TriodeClassA, TriodeModel};
 
-use crate::{f, rtf::{Rtf1, Rtf2}};
+use crate::{f, rtf::Rtf1};
 
 pub trait TriodeCathodeFilter<F, M>
 where
