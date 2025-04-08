@@ -76,7 +76,7 @@ where
     }
     fn update_miller_effect_output(&mut self, miller_effect: F)
     {
-        self.param.c = f!(M::C_CP) + f!(M::C_PG)/miller_effect;
+        self.param.c = f!(M::C_CP) + f!(M::C_PG)*miller_effect;
     }
 
     fn vg(&mut self, param: TriodeClassA<F>, rate: F, x: F) -> F
