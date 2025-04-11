@@ -21,7 +21,8 @@ moddef::moddef!(
         triode for cfg(feature = "tubes"),
 
         atanmoid,
-        curve_cache,
+        cache_table,
+        cache_tree,
         erfmoid for cfg(feature = "libm"),
         linmoid,
         pythmoid,

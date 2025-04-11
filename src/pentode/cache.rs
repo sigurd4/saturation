@@ -3,7 +3,7 @@ use std::alloc::{Allocator, Global};
 
 use real_time_fir_iir_filters::param::FilterFloat;
 
-use crate::CurveCache;
+use crate::CacheTable;
 
 use super::{calc::PentodeCalc, PentodeClassA, PentodeModel};
 
@@ -45,7 +45,7 @@ where
     M: PentodeModel,
     A: Allocator + Clone
 {
-    cache: CurveCache<F, 2, PentodeCacheFunc<F, M>, A>
+    cache: CacheTable<F, 2, PentodeCacheFunc<F, M>, A>
 }
 impl<F, M> PentodeCache<F, M>
 where
@@ -66,7 +66,7 @@ where
     pub fn new_in(param: PentodeClassA<F>, dy: F, alloc: A) -> Self
     {
         Self {
-            cache: CurveCache::new_in(
+            cache: CacheTable::new_in(
                 PentodeCacheFunc {
                     param,
                     marker: PhantomData

@@ -6,7 +6,7 @@ use crate::{f, finite::Finite, SaturationMut};
 use num::Float;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CurveCache<F, const N: usize, Y, A = Global>
+pub struct CacheTree<F, const N: usize, Y, A = Global>
 where
     F: Float,
     Y: FnMut(F) -> [F; N],
@@ -19,17 +19,17 @@ where
     curve: BTreeMap<Finite<F>, [F; N], A>
 }
 
-impl<F, const N: usize, Y> CurveCache<F, N, Y>
+impl<F, const N: usize, Y> CacheTree<F, N, Y>
 where
     F: Float,
     Y: FnMut(F) -> [F; N]
 {
-    pub fn new(func: Y, slope: F) -> Self
+    pub fn new(func: Y, dy: F) -> Self
     {
-        Self::new_in(func, slope, Global)
+        Self::new_in(func, dy, Global)
     }
 }
-impl<F, const N: usize, Y, A> CurveCache<F, N, Y, A>
+impl<F, const N: usize, Y, A> CacheTree<F, N, Y, A>
 where
     F: Float,
     Y: FnMut(F) -> [F; N],
@@ -147,7 +147,7 @@ where
     }
 }
 
-impl<F, Y, A> SaturationMut<F, RangeFull> for CurveCache<F, 1, Y, A>
+impl<F, Y, A> SaturationMut<F, RangeFull> for CacheTree<F, 1, Y, A>
 where
     F: Float,
     Y: FnMut(F) -> [F; 1],
