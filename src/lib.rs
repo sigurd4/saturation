@@ -1,6 +1,4 @@
-#![feature(generic_const_exprs)]
 #![feature(associated_const_equality)]
-#![feature(specialization)]
 #![feature(allocator_api)]
 #![feature(btreemap_alloc)]
 #![feature(btree_cursors)]
@@ -8,7 +6,10 @@
 #![feature(fn_traits)]
 #![feature(let_chains)]
 #![feature(unboxed_closures)]
+
+#![feature(specialization)]
 #![feature(core_intrinsics)]
+#![feature(generic_const_exprs)]
 
 use core::ops::RangeBounds;
 

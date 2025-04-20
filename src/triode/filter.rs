@@ -54,7 +54,7 @@ where
 
     fn new_cathode_filter(param: Self::Param) -> Self
     {
-        Self::new::<LowPass>(param)
+        Self::new(param)
     }
 
     fn param_cathode(&self) -> &Self::Param
@@ -130,11 +130,11 @@ where
 {
     fn new_input_filter(r_i: F) -> Self
     {
-        FirstOrderRCFilter::new::<LowPass>(RC {r: r_i, c: f!(M::C_CG + M::C_PG)})
+        FirstOrderRCFilter::new(RC {r: r_i, c: f!(M::C_CG + M::C_PG)})
     }
     fn new_output_filter(r_p: F) -> Self
     {
-        FirstOrderRCFilter::new::<LowPass>(RC {r: r_p, c: f!(M::C_CP + M::C_PG)})
+        FirstOrderRCFilter::new(RC {r: r_p, c: f!(M::C_CP + M::C_PG)})
     }
 
     fn update_miller_effect_input(&mut self, miller_effect: F)
