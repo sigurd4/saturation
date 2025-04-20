@@ -1,3 +1,4 @@
+#![cfg_attr(not(test), no_std)]
 #![feature(associated_const_equality)]
 #![feature(allocator_api)]
 #![feature(btreemap_alloc)]
@@ -15,6 +16,9 @@ use core::ops::RangeBounds;
 
 use num::Float;
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 moddef::moddef!(
     flat(pub) mod {
         diode for cfg(feature = "diodes"),
@@ -22,8 +26,8 @@ moddef::moddef!(
         triode for cfg(feature = "tubes"),
 
         atanmoid,
-        cache_table,
-        cache_tree,
+        cache_table for cfg(feature = "alloc"),
+        cache_tree for cfg(feature = "alloc"),
         erfmoid for cfg(feature = "libm"),
         linmoid,
         pythmoid,
@@ -36,7 +40,7 @@ moddef::moddef!(
         tubes for cfg(feature = "tubes")
     },
     mod {
-        finite,
+        finite for cfg(feature = "alloc"),
         plot for cfg(test),
         rtf for cfg(feature = "tubes")
     }

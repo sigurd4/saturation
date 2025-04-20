@@ -1,5 +1,5 @@
 use core::marker::PhantomData;
-use std::alloc::{Allocator, Global};
+use alloc::alloc::{Allocator, Global};
 
 use real_time_fir_iir_filters::param::FilterFloat;
 

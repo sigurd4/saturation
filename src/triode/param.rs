@@ -1,9 +1,13 @@
-use std::alloc::Allocator;
+#[cfg(feature = "alloc")]
+use alloc::alloc::Allocator;
 
 use num::Float;
+
+#[cfg(feature = "alloc")]
 use real_time_fir_iir_filters::param::FilterFloat;
 
-use super::{TriodeCache, TriodeModel};
+#[cfg(feature = "alloc")]
+use super::{TriodeModel, TriodeCache};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct TriodeClassA<F>
@@ -19,6 +23,7 @@ where
     /// Cathode voltage
     pub v_c: F
 }
+#[cfg(feature = "alloc")]
 impl<F> TriodeClassA<F>
 where
     F: FilterFloat

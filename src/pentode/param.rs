@@ -1,7 +1,9 @@
-use std::alloc::Allocator;
+#[cfg(feature = "alloc")]
+use alloc::alloc::Allocator;
 
 use real_time_fir_iir_filters::param::FilterFloat;
 
+#[cfg(feature = "alloc")]
 use super::{PentodeCache, PentodeModel};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -20,6 +22,7 @@ where
     /// Cathode voltage
     pub v_c: F
 }
+#[cfg(feature = "alloc")]
 impl<F> PentodeClassA<F>
 where
     F: FilterFloat

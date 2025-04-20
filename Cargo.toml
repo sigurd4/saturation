@@ -23,11 +23,13 @@ linspace = "0.1.1"
 
 [features]
 default = [
+    "alloc",
     "soft_exp",
     "tubes",
     "diodes",
     "libm"
 ]
+alloc = []
 soft_exp = []
 tubes = ["dep:real_time_fir_iir_filters", "real_time_fir_iir_filters/first_order_rc"]
 diodes = []

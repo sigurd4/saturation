@@ -4,7 +4,7 @@ use crate::tubes::Tube12AX7;
 
 moddef::moddef!(
     flat(pub) mod {
-        cache,
+        cache for cfg(feature = "alloc"),
         model,
         param
     },
@@ -14,24 +14,33 @@ moddef::moddef!(
     }
 );
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct Triode<F, M = Tube12AX7, FI = FirstOrderRCFilter<LowPass, F>, FO = FirstOrderRCFilter<LowPass, F>, FC = FirstOrderRCFilter<LowPass, F>, C = TriodeCache<F, M>>
-where
-    F: FilterFloat,
-    M: TriodeModel,
-    C: TriodeCalc<F, M>,
-    FI: TriodeFilter<F, M>,
-    FO: TriodeFilter<F, M>,
-    FC: TriodeCathodeFilter<F, M>
-{
-    calc: C,
-    input_filter: FI,
-    output_filter: FO,
-    cathode_filter: FC,
-    miller_effect: F,
-    offset: F,
-    model: M
+macro_rules! decl {
+    ($calc:ty) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+        pub struct Triode<F, M = Tube12AX7, FI = FirstOrderRCFilter<LowPass, F>, FO = FirstOrderRCFilter<LowPass, F>, FC = FirstOrderRCFilter<LowPass, F>, C = $calc>
+        where
+            F: FilterFloat,
+            M: TriodeModel,
+            C: TriodeCalc<F, M>,
+            FI: TriodeFilter<F, M>,
+            FO: TriodeFilter<F, M>,
+            FC: TriodeCathodeFilter<F, M>
+        {
+            calc: C,
+            input_filter: FI,
+            output_filter: FO,
+            cathode_filter: FC,
+            miller_effect: F,
+            offset: F,
+            model: M
+        }
+    };
 }
+
+#[cfg(feature = "alloc")]
+decl!(TriodeCache<F, M>);
+#[cfg(not(feature = "alloc"))]
+decl!(TriodeClassA<F>);
 
 impl<F, M, C, FI, FO, FC> Triode<F, M, FI, FO, FC, C>
 where
@@ -133,6 +142,7 @@ mod test
     {
         const RANGE: Range<f32> = -20.0..20.0;
         const RATE: f32 = 8000.0;
+        #[cfg(feature = "alloc")]
         const DY: f32 = 0.001;
         
         let param = TriodeClassA {
@@ -146,12 +156,25 @@ mod test
             c: 5e-6
         };
         
-        let mut t0 = Triode::<_, _>::new(param.cache(DY), Tube6DJ8, param_cathode);
-        let mut t1 = Triode::<_, _>::new(param.cache(DY), Tube12AX7, param_cathode);
-        let mut t2 = Triode::<_, _>::new(param.cache(DY), Tube12AU7, param_cathode);
-        let mut t3 = Triode::<_, _>::new(param.cache(DY), Tube6L6CG, param_cathode);
-        let mut t4 = Triode::<_, _>::new(param.cache(DY), Tube6550, param_cathode);
-        let mut t5 = Triode::<_, _>::new(param.cache(DY), TubeKT88, param_cathode);
+        #[cfg(feature = "alloc")]
+        macro_rules! calc {
+            () => {
+                param.cache(DY)
+            };
+        }
+        #[cfg(not(feature = "alloc"))]
+        macro_rules! calc {
+            () => {
+                param
+            };
+        }
+        
+        let mut t0 = Triode::<_, _>::new(calc!(), Tube6DJ8, param_cathode);
+        let mut t1 = Triode::<_, _>::new(calc!(), Tube12AX7, param_cathode);
+        let mut t2 = Triode::<_, _>::new(calc!(), Tube12AU7, param_cathode);
+        let mut t3 = Triode::<_, _>::new(calc!(), Tube6L6CG, param_cathode);
+        let mut t4 = Triode::<_, _>::new(calc!(), Tube6550, param_cathode);
+        let mut t5 = Triode::<_, _>::new(calc!(), TubeKT88, param_cathode);
 
         crate::tests::plot(
             "Triode",

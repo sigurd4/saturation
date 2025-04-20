@@ -1,5 +1,5 @@
 use core::ops::RangeFull;
-use std::alloc::{Allocator, Global};
+use alloc::{vec::Vec, alloc::{Allocator, Global}};
 
 use num::Float;
 

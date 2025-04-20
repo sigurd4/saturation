@@ -4,7 +4,7 @@ use crate::tubes::Tube6550;
 
 moddef::moddef!(
     flat(pub) mod {
-        cache,
+        cache for cfg(feature = "alloc"),
         model,
         param
     },
@@ -14,24 +14,32 @@ moddef::moddef!(
     }
 );
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct Pentode<F, M = Tube6550, FI = FirstOrderRCFilter<LowPass, F>, FO = FirstOrderRCFilter<LowPass, F>, FC = FirstOrderRCFilter<LowPass, F>, C = PentodeCache<F, M>>
-where
-    F: FilterFloat,
-    M: PentodeModel,
-    C: PentodeCalc<F, M>,
-    FI: PentodeFilter<F, M>,
-    FO: PentodeFilter<F, M>,
-    FC: PentodeCathodeFilter<F, M>
-{
-    calc: C,
-    input_filter: FI,
-    output_filter: FO,
-    cathode_filter: FC,
-    miller_effect: F,
-    offset: F,
-    model: M
+macro_rules! decl {
+    ($calc:ty) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+        pub struct Pentode<F, M = Tube6550, FI = FirstOrderRCFilter<LowPass, F>, FO = FirstOrderRCFilter<LowPass, F>, FC = FirstOrderRCFilter<LowPass, F>, C = $calc>
+        where
+            F: FilterFloat,
+            M: PentodeModel,
+            C: PentodeCalc<F, M>,
+            FI: PentodeFilter<F, M>,
+            FO: PentodeFilter<F, M>,
+            FC: PentodeCathodeFilter<F, M>
+        {
+            calc: C,
+            input_filter: FI,
+            output_filter: FO,
+            cathode_filter: FC,
+            miller_effect: F,
+            offset: F,
+            model: M
+        }
+    };
 }
+#[cfg(feature = "alloc")]
+decl!(PentodeCache<F, M>);
+#[cfg(not(feature = "alloc"))]
+decl!(PentodeClassA<F>);
 
 impl<F, M, C, FI, FO, FC> Pentode<F, M, FI, FO, FC, C>
 where
@@ -133,6 +141,7 @@ mod test
     {
         const RANGE: Range<f32> = -2.0..50.0;
         const RATE: f32 = 8000.0;
+        #[cfg(feature = "alloc")]
         const DY: f32 = 0.001;
         
         let param = PentodeClassA {
@@ -147,9 +156,22 @@ mod test
             c: 0.0
         };
         
-        let mut t0 = Pentode::<_, _>::new(param.cache(DY), Tube6L6CG, param_cathode);
-        let mut t1 = Pentode::<_, _>::new(param.cache(DY), Tube6550, param_cathode);
-        let mut t2 = Pentode::<_, _>::new(param.cache(DY), TubeKT88, param_cathode);
+        #[cfg(feature = "alloc")]
+        macro_rules! calc {
+            () => {
+                param.cache(DY)
+            };
+        }
+        #[cfg(not(feature = "alloc"))]
+        macro_rules! calc {
+            () => {
+                param
+            };
+        }
+
+        let mut t0 = Pentode::<_, _>::new(calc!(), Tube6L6CG, param_cathode);
+        let mut t1 = Pentode::<_, _>::new(calc!(), Tube6550, param_cathode);
+        let mut t2 = Pentode::<_, _>::new(calc!(), TubeKT88, param_cathode);
 
         crate::tests::plot(
             "Pentode",
