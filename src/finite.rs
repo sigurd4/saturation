@@ -41,6 +41,7 @@ where
     {
         &**self == other
     }
+    #[allow(clippy::partialeq_ne_impl)]
     fn ne(&self, other: &F) -> bool
     {
         &**self != other
@@ -81,6 +82,7 @@ where
 {
     
 }
+#[allow(clippy::derive_ord_xor_partial_ord)]
 impl<F> Ord for Finite<F>
 where
     F: Float

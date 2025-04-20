@@ -7,7 +7,6 @@
 #![feature(fn_traits)]
 #![feature(let_chains)]
 #![feature(unboxed_closures)]
-
 #![feature(specialization)]
 #![feature(core_intrinsics)]
 #![feature(generic_const_exprs)]
