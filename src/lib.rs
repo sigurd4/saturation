@@ -21,6 +21,7 @@ extern crate alloc;
 moddef::moddef!(
     flat(pub) mod {
         diode for cfg(feature = "diodes"),
+        jfet for cfg(feature = "jfets"),
         pentode for cfg(feature = "tubes"),
         triode for cfg(feature = "tubes"),
 
@@ -35,7 +36,6 @@ moddef::moddef!(
         tanh
     },
     pub mod {
-        diodes for cfg(feature = "diodes"),
         tubes for cfg(feature = "tubes")
     },
     mod {

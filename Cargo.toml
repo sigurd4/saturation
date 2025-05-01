@@ -27,10 +27,12 @@ default = [
     "soft_exp",
     "tubes",
     "diodes",
+    "jfets",
     "libm"
 ]
 alloc = []
 soft_exp = []
 tubes = ["dep:real_time_fir_iir_filters", "real_time_fir_iir_filters/first_order_rc"]
 diodes = []
+jfets = []
 libm = ["dep:libm"]
