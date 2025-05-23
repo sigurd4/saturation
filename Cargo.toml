@@ -15,7 +15,7 @@ num = "0.4.3"
 moddef = "0.2.6"
 serde = {version = "1.0.219", features = ["derive"]}
 real_time_fir_iir_filters = {version = "1.3.3", optional = true, default-features = false}
-libm = {version = "0.2.13", optional = true}
+libm = {version = "0.2.15", optional = true}
 
 [dev-dependencies]
 plotters = "0.3.7"
