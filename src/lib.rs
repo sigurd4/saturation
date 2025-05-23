@@ -9,6 +9,8 @@
 #![feature(let_chains)]
 #![feature(unboxed_closures)]
 #![feature(core_intrinsics)]
+#![feature(step_trait)]
+#![feature(iter_collect_into)]
 #![feature(specialization)]
 #![feature(generic_const_exprs)]
 

@@ -1,3 +1,5 @@
+use core::ops::Range;
+
 #[cfg(feature = "alloc")]
 use alloc::alloc::Allocator;
 
@@ -28,18 +30,18 @@ impl<F> TriodeClassA<F>
 where
     F: FilterFloat
 {
-    pub fn cache_in<M, A>(self, dy: F, alloc: A) -> TriodeCache<F, M, A>
+    pub fn cache_in<M, A>(self, range: Range<F>, resolution: usize, alloc: A) -> TriodeCache<F, M, A>
     where
         M: TriodeModel,
         A: Allocator + Clone
     {
-        TriodeCache::new_in(self, dy, alloc)
+        TriodeCache::new_in(self, range, resolution, alloc)
     }
 
-    pub fn cache<M>(self, dy: F) -> TriodeCache<F, M>
+    pub fn cache<M>(self, range: Range<F>, resolution: usize) -> TriodeCache<F, M>
     where
         M: TriodeModel
     {
-        TriodeCache::new(self, dy)
+        TriodeCache::new(self, range, resolution)
     }
 }

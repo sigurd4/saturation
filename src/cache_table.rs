@@ -1,4 +1,4 @@
-use core::ops::RangeFull;
+use core::ops::{Range, RangeFull};
 use alloc::{vec::Vec, alloc::{Allocator, Global}};
 
 use num::Float;
@@ -6,17 +6,119 @@ use num::Float;
 use crate::SaturationMut;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+struct CacheTableCurve<F, const N: usize, A = Global>
+where
+    F: Float,
+    A: Allocator
+{
+    infinity: [[F; N]; 2],
+    curve: Vec<[F; N], A>,
+    range: Range<F>
+}
+
+impl<F, const N: usize, A> CacheTableCurve<F, N, A>
+where
+    F: Float,
+    A: Allocator
+{
+    const MAX: usize = u16::MAX as usize - 1;
+
+    fn new_in<Y>(mut func: Y, mut range: Range<F>, resolution: usize, alloc: A) -> Self
+    where
+        Y: FnMut(F) -> [F; N]
+    {
+        let (neg_inf, inf) = Self::inf(&range, resolution);
+
+        let x_bound @ [x_min, x_max] = [range.start.max(neg_inf), range.end.min(inf)];
+        let infinity = x_bound.map(&mut func);
+        range = x_min..x_max;
+
+        Self {
+            infinity,
+            curve: Vec::new_in(alloc),
+            range
+        }
+    }
+
+    fn reset(&mut self)
+    {
+        self.curve.clear();
+    }
+    fn is_set(&self, resolution: usize) -> bool
+    {
+        self.curve.len() == resolution + 1
+    }
+
+    fn refresh<Y>(&mut self, mut func: Y, resolution: usize)
+    where
+        Y: FnMut(F) -> [F; N]
+    {
+        self.reset();
+
+        let one = F::one();
+        let (neg_inf, inf) = Self::inf(&self.range, resolution);
+
+        let x_bound @ [x_min, x_max] = [self.range.start.max(neg_inf), self.range.end.min(inf)];
+        self.infinity = x_bound.map(&mut func);
+
+        (0..=resolution)
+            .map(|i| {
+                if let Some(p) = F::from(i as f64/resolution as f64)
+                {
+                    let q = one - p;
+                    return x_min*q + x_max*p
+                }
+
+                x_bound[(i > resolution/2) as usize]
+            })
+            .map(|x| func(x))
+            .collect_into(&mut self.curve);
+    }
+
+    fn max(dx: F) -> Option<F>
+    {
+        F::from(Self::MAX)
+            .map(|i| i*dx)
+    }
+
+    fn dx(range: &Range<F>, resolution: usize) -> F
+    {
+        if let Some(r) = F::from(resolution)
+        {
+            let dx = ((range.end - range.start)/r).abs();
+            if dx.is_finite()
+            {
+                return dx
+            }
+        }
+
+        F::zero()
+    }
+
+    fn inf(range: &Range<F>, resolution: usize) -> (F, F)
+    {
+        if resolution >= Self::MAX
+        {
+            let dx = Self::dx(range, resolution);
+            if let Some(max) = Self::max(dx)
+            {
+                return (-max, max)
+            }
+        }
+        (F::neg_infinity(), F::infinity())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CacheTable<F, const N: usize, Y, A = Global>
 where
     F: Float,
     Y: FnMut(F) -> [F; N],
-    A: Allocator + Clone
+    A: Allocator
 {
     func: Y,
-    has_changed: bool,
-    dx: F,
-    infinity: [[F; N]; 2],
-    curve: [Vec<[F; N], A>; 2]
+    resolution: usize,
+    curve: CacheTableCurve<F, N, A>
 }
 
 impl<F, const N: usize, Y> CacheTable<F, N, Y>
@@ -24,9 +126,9 @@ where
     F: Float,
     Y: FnMut(F) -> [F; N]
 {
-    pub fn new(func: Y, dx: F) -> Self
+    pub fn new(func: Y, range: Range<F>, resolution: usize) -> Self
     {
-        Self::new_in(func, dx, Global)
+        Self::new_in(func, range, resolution, Global)
     }
     
 }
@@ -37,18 +139,15 @@ where
     Y: FnMut(F) -> [F; N],
     A: Allocator + Clone
 {
-    const MAX: usize = u32::MAX as usize;
-
-    pub fn new_in(mut func: Y, dx: F, alloc: A) -> Self
+    pub fn new_in(mut func: Y, range: Range<F>, mut resolution: usize, alloc: A) -> Self
     {
-        let (neg_inf, inf) = Self::inf(dx);
-        let infinity = [func(neg_inf), func(inf)];
+        resolution = resolution.min(CacheTableCurve::<F, N, A>::MAX);
+        let curve = CacheTableCurve::new_in(&mut func, range, resolution, alloc);
+
         Self {
             func,
-            has_changed: false,
-            dx: dx.abs(),
-            infinity,
-            curve: [Vec::new_in(alloc.clone()), Vec::new_in(alloc)]
+            resolution,
+            curve
         }
     }
 
@@ -58,67 +157,34 @@ where
     }
     pub fn func_mut(&mut self) -> &mut Y
     {
-        self.has_changed = true;
+        self.reset();
         &mut self.func
     }
 
     pub fn reset(&mut self)
     {
-        for curve in self.curve.iter_mut()
-        {
-            curve.clear()
-        }
-        self.infinity = [(self.func)(F::neg_infinity()), (self.func)(F::infinity())];
-    }
-
-    fn max(dx: F) -> Option<F>
-    {
-        F::from(Self::MAX)
-            .map(|i| i*dx)
-    }
-
-    fn inf(dx: F) -> (F, F)
-    {
-        if let Some(max) = Self::max(dx)
-        {
-            (-max, max)
-        }
-        else
-        {
-            (F::neg_infinity(), F::infinity())
-        }
+        self.curve.reset()
     }
 
     fn is_bounded(&self, x: F) -> bool
     {
-        if let Some(max) = Self::max(self.dx)
-        {
-            x.abs() < max
-        }
-        else
-        {
-            false
-        }
+        self.curve.is_set(self.resolution) && self.curve.range.start <= x && x <= self.curve.range.end
     }
 
     fn index(&self, x: F) -> Option<(usize, usize, F, F)>
     {
-        if self.is_bounded(x)
+        if self.is_bounded(x) && let Some(r) = F::from(self.resolution)
         {
-            let mut p = x.abs()/self.dx;
+            let z = r*(x - self.curve.range.start)/(self.curve.range.end - self.curve.range.start);
             if let (Some(i0), Some(i1)) = (
-                p.floor().to_usize(),
-                p.ceil().to_usize()
+                z.floor().to_usize(),
+                z.ceil().to_usize()
             )
             {
-                p = p.fract();
+                let p = z.fract();
                 let q = F::one() - p;
-                return Some((
-                    i0,
-                    i1,
-                    q,
-                    p
-                ))
+
+                return Some((i0, i1, p, q))
             }
         }
         None
@@ -126,42 +192,17 @@ where
 
     pub fn saturate(&mut self, x: F) -> [F; N]
     {
-        let b = x.is_sign_positive();
-
+        if !self.curve.is_set(self.resolution)
+        {
+            self.curve.refresh(&mut self.func, self.resolution);
+        }
         self.index(x)
             .and_then(|(i0, i1, q, p)| {
-                let curve = &mut self.curve[b as usize];
-
-                let l = curve.len();
-                let l2 = i1 + 1;
-                curve.reserve(l2.saturating_sub(l));
-                for i in l..l2
-                {
-                    if let Some(i) = F::from(i)
-                    {
-                        let mut x = i*self.dx;
-                        if !b
-                        {
-                            x = -x
-                        }
-                        let y = (self.func)(x);
-                        if y == self.infinity[b as usize]
-                        {
-                            return Some(y)
-                        }
-                        curve.push(y);
-                    }
-                    else
-                    {
-                        return None
-                    }
-                }
-
                 let mut y = unsafe {
-                    *curve.get_unchecked(i0)
+                    *self.curve.curve.get_unchecked(i0)
                 };
                 let y1 = unsafe {
-                    *curve.get_unchecked(i1)
+                    *self.curve.curve.get_unchecked(i1)
                 };
 
                 for (y, y1) in y.iter_mut()
@@ -171,7 +212,7 @@ where
                 }
                 
                 Some(y)
-            }).unwrap_or_else(|| self.infinity[b as usize])
+            }).unwrap_or_else(|| self.curve.infinity[x.is_sign_positive() as usize])
     }
 }
 

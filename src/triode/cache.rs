@@ -1,4 +1,4 @@
-use core::marker::PhantomData;
+use core::{marker::PhantomData, ops::Range};
 use alloc::alloc::{Allocator, Global};
 
 use real_time_fir_iir_filters::param::FilterFloat;
@@ -52,9 +52,9 @@ where
     F: FilterFloat,
     M: TriodeModel
 {
-    pub fn new(param: TriodeClassA<F>, slope: F) -> Self
+    pub fn new(param: TriodeClassA<F>, range: Range<F>, resolution: usize) -> Self
     {
-        Self::new_in(param, slope, Global)
+        Self::new_in(param, range, resolution, Global)
     }
 }
 impl<F, M, A> TriodeCache<F, M, A>
@@ -63,7 +63,7 @@ where
     M: TriodeModel,
     A: Allocator + Clone
 {
-    pub fn new_in(param: TriodeClassA<F>, dy: F, alloc: A) -> Self
+    pub fn new_in(param: TriodeClassA<F>, range: Range<F>, resolution: usize, alloc: A) -> Self
     {
         Self {
             cache: CacheTable::new_in(
@@ -71,7 +71,8 @@ where
                     param,
                     marker: PhantomData
                 },
-                dy,
+                range,
+                resolution,
                 alloc
             )
         }

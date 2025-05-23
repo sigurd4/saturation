@@ -143,7 +143,7 @@ mod test
         const RANGE: Range<f32> = -20.0..20.0;
         const RATE: f32 = 8000.0;
         #[cfg(feature = "alloc")]
-        const DY: f32 = 0.001;
+        const RESOLUTION: usize = 1024;
         
         let param = TriodeClassA {
             r_i: 1e3,
@@ -159,7 +159,7 @@ mod test
         #[cfg(feature = "alloc")]
         macro_rules! calc {
             () => {
-                param.cache(DY)
+                param.cache(RANGE, RESOLUTION)
             };
         }
         #[cfg(not(feature = "alloc"))]
