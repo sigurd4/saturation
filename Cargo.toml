@@ -19,7 +19,7 @@ libm = {version = "0.2.15", optional = true}
 
 [dev-dependencies]
 plotters = "0.3.7"
-linspace = "0.1.1"
+linspace = "0.2.2"
 
 [features]
 default = [
