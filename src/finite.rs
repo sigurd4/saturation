@@ -2,6 +2,7 @@ use core::{cmp::Ordering, fmt::Debug, ops::{Add, Deref, Div, Mul, Rem, Sub}};
 
 use num::Float;
 
+#[allow(clippy::derive_ord_xor_partial_ord)]
 #[derive(Clone, Copy, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
 #[serde(transparent)]
 #[repr(transparent)]
@@ -82,7 +83,6 @@ where
 {
     
 }
-#[allow(clippy::derive_ord_xor_partial_ord)]
 impl<F> Ord for Finite<F>
 where
     F: Float

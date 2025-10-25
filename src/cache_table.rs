@@ -71,7 +71,7 @@ where
 
                 x_bound[(i > resolution/2) as usize]
             })
-            .map(|x| func(x))
+            .map(func)
             .collect_into(&mut self.curve);
     }
 
@@ -197,7 +197,7 @@ where
             self.curve.refresh(&mut self.func, self.resolution);
         }
         self.index(x)
-            .and_then(|(i0, i1, q, p)| {
+            .map(|(i0, i1, q, p)| {
                 let mut y = unsafe {
                     *self.curve.curve.get_unchecked(i0)
                 };
@@ -211,7 +211,7 @@ where
                     *y = *y*q + y1*p;
                 }
                 
-                Some(y)
+                y
             }).unwrap_or_else(|| self.curve.infinity[x.is_sign_positive() as usize])
     }
 }
