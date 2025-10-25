@@ -2,12 +2,12 @@ use core::ops::RangeFull;
 
 use num::{traits::FloatConst, Float};
 
-use crate::{Saturation, SaturationMut};
+use crate::{Saturate, SaturateMut};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct ErfMoid;
 
-impl<F> SaturationMut<F, RangeFull> for ErfMoid
+impl<F> SaturateMut<F, RangeFull> for ErfMoid
 where
     F: Float + FloatConst
 {
@@ -16,7 +16,7 @@ where
         self.saturate(x, range)
     }
 }
-impl<F> Saturation<F, RangeFull> for ErfMoid
+impl<F> Saturate<F, RangeFull> for ErfMoid
 where
     F: Float + FloatConst
 {

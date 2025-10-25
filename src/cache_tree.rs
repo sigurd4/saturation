@@ -1,7 +1,7 @@
 use core::ops::{Bound, RangeFull};
 use alloc::{alloc::{Allocator, Global}, collections::BTreeMap};
 
-use crate::{f, finite::Finite, SaturationMut};
+use crate::{f, finite::Finite, SaturateMut};
 
 use num::Float;
 
@@ -147,7 +147,7 @@ where
     }
 }
 
-impl<F, Y, A> SaturationMut<F, RangeFull> for CacheTree<F, 1, Y, A>
+impl<F, Y, A> SaturateMut<F, RangeFull> for CacheTree<F, 1, Y, A>
 where
     F: Float,
     Y: FnMut(F) -> [F; 1],

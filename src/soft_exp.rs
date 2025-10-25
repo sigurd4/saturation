@@ -2,12 +2,12 @@ use core::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInc
 
 use num::{Float, traits::FloatConst};
 
-use crate::{Saturation, SaturationMut};
+use crate::{Saturate, SaturateMut};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SoftExp;
 
-impl<F> SaturationMut<F, Range<F>> for SoftExp
+impl<F> SaturateMut<F, Range<F>> for SoftExp
 where
     F: Float + FloatConst
 {
@@ -16,7 +16,7 @@ where
         self.saturate(x, range)
     }
 }
-impl<F> Saturation<F, Range<F>> for SoftExp
+impl<F> Saturate<F, Range<F>> for SoftExp
 where
     F: Float + FloatConst
 {
@@ -33,7 +33,7 @@ where
         }
     }
 }
-impl<F> SaturationMut<F, RangeFrom<F>> for SoftExp
+impl<F> SaturateMut<F, RangeFrom<F>> for SoftExp
 where
     F: Float + FloatConst
 {
@@ -42,7 +42,7 @@ where
         self.saturate(x, range)
     }
 }
-impl<F> Saturation<F, RangeFrom<F>> for SoftExp
+impl<F> Saturate<F, RangeFrom<F>> for SoftExp
 where
     F: Float + FloatConst
 {
@@ -54,7 +54,7 @@ where
         x + (range.start - x).exp() - range.start.exp()
     }
 }
-impl<F> SaturationMut<F, RangeTo<F>> for SoftExp
+impl<F> SaturateMut<F, RangeTo<F>> for SoftExp
 where
     F: Float + FloatConst
 {
@@ -63,7 +63,7 @@ where
         self.saturate(x, range)
     }
 }
-impl<F> Saturation<F, RangeTo<F>> for SoftExp
+impl<F> Saturate<F, RangeTo<F>> for SoftExp
 where
     F: Float + FloatConst
 {
@@ -76,7 +76,7 @@ where
     }
 }
 
-impl<F> SaturationMut<F, RangeInclusive<F>> for SoftExp
+impl<F> SaturateMut<F, RangeInclusive<F>> for SoftExp
 where
     F: Float + FloatConst
 {
@@ -85,7 +85,7 @@ where
         self.saturate(x, range)
     }
 }
-impl<F> Saturation<F, RangeInclusive<F>> for SoftExp
+impl<F> Saturate<F, RangeInclusive<F>> for SoftExp
 where
     F: Float + FloatConst
 {
@@ -95,7 +95,7 @@ where
         self.saturate(x, *range.start()..*range.end())
     }
 }
-impl<F> SaturationMut<F, RangeToInclusive<F>> for SoftExp
+impl<F> SaturateMut<F, RangeToInclusive<F>> for SoftExp
 where
     F: Float + FloatConst
 {
@@ -104,7 +104,7 @@ where
         self.saturate(x, range)
     }
 }
-impl<F> Saturation<F, RangeToInclusive<F>> for SoftExp
+impl<F> Saturate<F, RangeToInclusive<F>> for SoftExp
 where
     F: Float + FloatConst
 {
@@ -114,7 +114,7 @@ where
         self.saturate(x, ..range.end)
     }
 }
-impl<F> SaturationMut<F, RangeFull> for SoftExp
+impl<F> SaturateMut<F, RangeFull> for SoftExp
 where
     F: Float + FloatConst
 {
@@ -123,7 +123,7 @@ where
         self.saturate(x, range)
     }
 }
-impl<F> Saturation<F, RangeFull> for SoftExp
+impl<F> Saturate<F, RangeFull> for SoftExp
 where
     F: Float + FloatConst
 {

@@ -3,7 +3,7 @@ use alloc::{vec::Vec, alloc::{Allocator, Global}};
 
 use num::Float;
 
-use crate::SaturationMut;
+use crate::SaturateMut;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct CacheTableCurve<F, const N: usize, A = Global>
@@ -216,7 +216,7 @@ where
     }
 }
 
-impl<F, Y, A> SaturationMut<F, RangeFull> for CacheTable<F, 1, Y, A>
+impl<F, Y, A> SaturateMut<F, RangeFull> for CacheTable<F, 1, Y, A>
 where
     F: Float,
     Y: FnMut(F) -> [F; 1],

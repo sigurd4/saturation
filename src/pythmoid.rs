@@ -2,12 +2,12 @@ use core::ops::RangeFull;
 
 use num::Float;
 
-use crate::{Saturation, SaturationMut};
+use crate::{Saturate, SaturateMut};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct PythMoid;
 
-impl<F> SaturationMut<F, RangeFull> for PythMoid
+impl<F> SaturateMut<F, RangeFull> for PythMoid
 where
     F: Float
 {
@@ -16,7 +16,7 @@ where
         self.saturate(x, range)
     }
 }
-impl<F> Saturation<F, RangeFull> for PythMoid
+impl<F> Saturate<F, RangeFull> for PythMoid
 where
     F: Float
 {

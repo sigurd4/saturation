@@ -139,6 +139,7 @@ mod test
     #[test]
     fn it_works()
     {
+        const EDGE: f32 = 0.2;
         const RANGE: Range<f32> = -2.0..50.0;
         const RATE: f32 = 8000.0;
         #[cfg(feature = "alloc")]
@@ -159,7 +160,7 @@ mod test
         #[cfg(feature = "alloc")]
         macro_rules! calc {
             () => {
-                param.cache(RANGE, RESOLUTION)
+                param.cache(RANGE.start + EDGE..RANGE.end - EDGE, RESOLUTION)
             };
         }
         #[cfg(not(feature = "alloc"))]

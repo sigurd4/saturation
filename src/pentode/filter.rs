@@ -1,8 +1,8 @@
-use real_time_fir_iir_filters::{conf::LowPass, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}, static_rtf::StaticRtfBase};
+use real_time_fir_iir_filters::{conf::LowPass, filters::iir::first::FirstOrderRCFilter, param::{FilterFloat, RC}, rtf::{Rtf, StaticRtf}};
 
 use super::{PentodeClassA, PentodeModel};
 
-use crate::{f, rtf::Rtf1};
+use crate::f;
 
 pub trait PentodeCathodeFilter<F, M>
 where
@@ -48,7 +48,7 @@ impl<F, M> PentodeCathodeFilter<F, M> for FirstOrderRCFilter<LowPass, F, RC<F>>
 where
     F: FilterFloat,
     M: PentodeModel,
-    Self: Rtf1<F = F>
+    Self: Rtf<F = F, Outputs<F> = [F; 1], Param = RC<F>>
 {
     type Param = RC<F>;
 
@@ -68,7 +68,8 @@ where
 
     fn vg_cathode(&mut self, param: PentodeClassA<F>, miller_effect: F, rate: F, x: F) -> F
     {
-        x - self.filter(rate, (x*miller_effect - x)*self.param.r/param.r_p)
+        let [vg_miller] = self.filter(rate, (x*miller_effect - x)*self.param.r/param.r_p);
+        x - vg_miller
     }
 }
 
@@ -125,7 +126,7 @@ impl<F, M> PentodeFilter<F, M> for FirstOrderRCFilter<LowPass, F, RC<F>>
 where
     F: FilterFloat,
     M: PentodeModel,
-    Self: Rtf1<F = F>
+    Self: Rtf<F = F, Outputs<F> = [F; 1]>
 {
     fn new_input_filter(r_i: F) -> Self
     {
@@ -147,10 +148,12 @@ where
 
     fn vg(&mut self, param: PentodeClassA<F>, rate: F, x: F) -> F
     {
-        self.filter(rate, PentodeFilter::<F, M>::vg(&mut (), param, rate, x))
+        let [vg] = self.filter(rate, PentodeFilter::<F, M>::vg(&mut (), param, rate, x));
+        vg
     }
     fn y(&mut self, rate: F, y: F) -> F
     {
-        self.filter(rate, PentodeFilter::<F, M>::y(&mut (), rate, y))
+        let [y] = self.filter(rate, PentodeFilter::<F, M>::y(&mut (), rate, y));
+        y
     }
 }

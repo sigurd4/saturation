@@ -1,15 +1,10 @@
 #![cfg_attr(not(test), no_std)]
 #![allow(internal_features)]
-#![feature(associated_const_equality)]
 #![feature(allocator_api)]
 #![feature(btreemap_alloc)]
 #![feature(btree_cursors)]
-#![feature(negative_impls)]
 #![feature(fn_traits)]
-#![feature(let_chains)]
 #![feature(unboxed_closures)]
-#![feature(core_intrinsics)]
-#![feature(step_trait)]
 #![feature(iter_collect_into)]
 #![feature(specialization)]
 #![feature(generic_const_exprs)]
@@ -44,7 +39,6 @@ moddef::moddef!(
     mod {
         finite for cfg(feature = "alloc"),
         plot for cfg(test),
-        rtf for cfg(feature = "tubes")
     }
 );
 
@@ -59,7 +53,7 @@ macro_rules! f {
     };
 }
 
-pub trait SaturationMut<F, R>
+pub trait SaturateMut<F, R>
 where
     F: Float,
     R: RangeBounds<F>
@@ -67,7 +61,7 @@ where
     fn saturate_mut(&mut self, x: F, range: R) -> F;
 }
 
-pub trait Saturation<F, R>: SaturationMut<F, R>
+pub trait Saturate<F, R>: SaturateMut<F, R>
 where
     F: Float,
     R: RangeBounds<F>
@@ -118,7 +112,7 @@ mod tests
 {
     use core::ops::Range;
 
-    use linspace::LinspaceArray;
+    use linspace::Linspace;
 
     const PLOT_TARGET: &str = "plots";
 

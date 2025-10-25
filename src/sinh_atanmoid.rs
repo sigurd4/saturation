@@ -2,12 +2,12 @@ use core::ops::RangeFull;
 
 use num::{traits::FloatConst, Float};
 
-use crate::{ATanMoid, Saturation, SaturationMut};
+use crate::{ATanMoid, Saturate, SaturateMut};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct SinHATanMoid;
 
-impl<F> SaturationMut<F, RangeFull> for SinHATanMoid
+impl<F> SaturateMut<F, RangeFull> for SinHATanMoid
 where
     F: Float + FloatConst
 {
@@ -16,7 +16,7 @@ where
         self.saturate(x, range)
     }
 }
-impl<F> Saturation<F, RangeFull> for SinHATanMoid
+impl<F> Saturate<F, RangeFull> for SinHATanMoid
 where
     F: Float + FloatConst
 {

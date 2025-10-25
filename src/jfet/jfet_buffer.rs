@@ -1,7 +1,7 @@
 use core::{marker::PhantomData, ops::RangeTo};
 
 use num::Float;
-use crate::{f, Saturation, SoftExp};
+use crate::{f, Saturate, SoftExp};
 
 use super::JFETModel;
 
@@ -19,7 +19,7 @@ where
 impl<F, M> JFETBuffer<F, M>
 where
     F: Float,
-    SoftExp: Saturation<F, RangeTo<F>>,
+    SoftExp: Saturate<F, RangeTo<F>>,
     M: JFETModel
 {
     pub fn new(r_s: F, v_dd: F) -> Self
