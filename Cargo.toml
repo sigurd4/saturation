@@ -28,7 +28,7 @@ default = [
     "tubes",
     "diodes",
     "jfets",
-    "libm"
+    "libm",
 ]
 alloc = []
 soft_exp = []
